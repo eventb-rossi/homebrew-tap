@@ -1,0 +1,36 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+
+jobs:
+  test:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: Homebrew/actions/setup-homebrew@main
+
+      # `brew audit` no longer accepts a file path ("Calling `brew audit
+      # [path ...]` is disabled"); it must audit a *tapped* cask by name.
+      # Register this checkout as the eventb-rossi/tap tap via a symlink.
+      - name: Register repository as a Homebrew tap
+        run: |
+          tap_dir="$(brew --repository)/Library/Taps/eventb-rossi/homebrew-tap"
+          mkdir -p "$(dirname "$tap_dir")"
+          ln -s "$GITHUB_WORKSPACE" "$tap_dir"
+
+      # Explicitly trust our own tap. Avoids the "trusted by default" hint and
+      # keeps CI working once Homebrew makes explicit tap trust the default
+      # (HOMEBREW_REQUIRE_TAP_TRUST), instead of relying on auto-trust.
+      - name: Trust the tap
+        run: brew trust --tap eventb-rossi/tap
+
+      - name: Style
+        run: brew style Casks/rodin.rb
+
+      # Offline audit only. `--new`/`--online` download and Gatekeeper-assess
+      # the app, which always fails for Rodin's unsigned Eclipse bundle
+      # ("the software has been altered"), so they are intentionally omitted.
+      - name: Audit
+        run: brew audit --cask eventb-rossi/tap/rodin
