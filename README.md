@@ -33,9 +33,11 @@ only one at a time.
 | Formula | Version | Description                                                                 |
 | ------- | ------- | --------------------------------------------------------------------------- |
 | `evbt`  | 1.5.0   | [EventBTool](https://codeberg.org/viklauverk/EventBTool) — code generation and documentation from Event-B models |
+| `tlc4b` | 1.2.3   | [TLC4B](https://github.com/hhu-stups/tlc4b) — model-check classical B specifications by translating them to TLA+ and running TLC |
 
 ```sh
 brew install evbt
+brew install tlc4b
 ```
 
 ## Requirements
@@ -47,7 +49,8 @@ brew install evbt
   brew install --cask temurin
   ```
 
-  `evbt` does not need a separate JDK; Homebrew installs `openjdk` for it automatically.
+  The `evbt` and `tlc4b` formulae do not need a separate JDK; Homebrew installs
+  `openjdk` for them automatically.
 
 - Rodin and Atelier B are **not notarized** by Apple. If Gatekeeper blocks an app from
   opening, clear the quarantine flag, e.g.:
