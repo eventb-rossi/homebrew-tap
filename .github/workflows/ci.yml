@@ -36,4 +36,4 @@ jobs:
         run: brew audit --cask eventb-rossi/tap/rodin eventb-rossi/tap/rodin@rc eventb-rossi/tap/atelier-b
 
       - name: Audit formulae
-        run: brew audit --formula eventb-rossi/tap/evbt eventb-rossi/tap/tlc4b
+        run: brew audit --formula eventb-rossi/tap/evbt eventb-rossi/tap/tlc4b eventb-rossi/tap/b2program
