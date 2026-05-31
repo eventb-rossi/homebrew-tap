@@ -1,0 +1,23 @@
+name: Set up the tap
+description: Register this checkout as the eventb-rossi/tap Homebrew tap and trust it.
+
+# Used by every workflow job that runs `brew` against this repo. Requires the
+# repository to already be checked out and Homebrew to be set up.
+runs:
+  using: composite
+  steps:
+    # `brew audit`/`livecheck` operate on a *tapped* formula/cask by name, not a
+    # file path, so register this checkout as the eventb-rossi/tap tap via a symlink.
+    - name: Register repository as a Homebrew tap
+      shell: bash
+      run: |
+        tap_dir="$(brew --repository)/Library/Taps/eventb-rossi/homebrew-tap"
+        mkdir -p "$(dirname "$tap_dir")"
+        ln -s "$GITHUB_WORKSPACE" "$tap_dir"
+
+    # Explicitly trust our own tap. Avoids the "trusted by default" hint and keeps
+    # things working once Homebrew makes explicit tap trust the default
+    # (HOMEBREW_REQUIRE_TAP_TRUST), instead of relying on auto-trust.
+    - name: Trust the tap
+      shell: bash
+      run: brew trust --tap eventb-rossi/tap

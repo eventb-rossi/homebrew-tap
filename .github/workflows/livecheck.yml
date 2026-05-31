@@ -1,0 +1,112 @@
+name: Release tracker
+
+on:
+  schedule:
+    - cron: "17 7 * * *"   # daily, 07:17 UTC (off the hour to dodge scheduler load)
+  workflow_dispatch: {}
+
+concurrency:
+  group: release-tracker
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  # GitHub-sourced formulae have version-derivable URLs, so the version + sha256
+  # bump is mechanical: open update PRs via Homebrew's official action.
+  # (b2program is intentionally absent — its livecheck is `skip`-ed upstream.)
+  bump-formulae:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: Homebrew/actions/setup-homebrew@main
+      - uses: ./.github/actions/setup-tap
+
+      - name: Open PRs for outdated formulae
+        uses: Homebrew/actions/bump-packages@master
+        with:
+          # Default GITHUB_TOKEN can't push branches / open PRs that re-trigger CI,
+          # and brew bump needs write access. Set the repo secret HOMEBREW_BUMP_PAT
+          # to a PAT with Contents + Pull requests: write (or classic `public_repo`).
+          token: ${{ secrets.HOMEBREW_BUMP_PAT }}
+          fork: false            # we own the tap; push the bump branch directly
+          formulae: |
+            eventb-rossi/tap/evbt
+            eventb-rossi/tap/eventb-checker
+            eventb-rossi/tap/tlc4b
+
+  # Casks embed opaque build ids in their download URLs (timestamp + git hash), so
+  # they can't be auto-bumped — file a tracking issue per new release instead.
+  track-casks:
+    runs-on: macos-latest        # Linux Homebrew cannot livecheck casks
+    steps:
+      - uses: actions/checkout@v6
+      - uses: Homebrew/actions/setup-homebrew@main
+      - uses: ./.github/actions/setup-tap
+
+      - name: File issues for outdated casks
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          # Scan every cask in the tap (no hardcoded list to keep in sync as the tap
+          # grows). livecheck exits non-zero if a source is unreachable; don't abort
+          # the whole job — parse whatever JSON it produced.
+          brew livecheck --tap eventb-rossi/tap --cask --newer-only --json > casks.json || true
+
+          # Idempotent label.
+          gh label create livecheck \
+            --color FBCA04 \
+            --description "Upstream release detected by brew livecheck" 2>/dev/null || true
+
+          # Snapshot of open tracking issues, taken before we create any.
+          existing="$(gh issue list --label livecheck --state open --json number,title --limit 200)"
+
+          # name<TAB>current<TAB>latest for each genuinely-newer cask (strip the
+          # tap prefix that --tap puts on the cask token).
+          jq -r '.[]
+                 | select(.version.latest != null and .version.current != .version.latest)
+                 | [(.cask | sub("^.*/"; "")), .version.current, .version.latest]
+                 | @tsv' casks.json |
+          while IFS=$'\t' read -r name current latest; do
+            title="${name}: ${current} → ${latest}"
+
+            if jq -e --arg t "$title" 'any(.[]; .title == $t)' <<<"$existing" >/dev/null; then
+              echo "Already tracked: $title"
+              continue
+            fi
+
+            body="$(cat <<EOF
+          \`brew livecheck\` found a newer upstream release for the **${name}** cask.
+
+          | | Version |
+          |---|---|
+          | Packaged | \`${current}\` |
+          | Upstream | \`${latest}\` |
+
+          Update checklist for \`Casks/${name}.rb\`:
+
+          - [ ] Bump \`version\` to \`${latest}\`
+          - [ ] Refresh the download URL — the filename embeds an opaque build id
+                (timestamp + git hash) that is **not** derivable from the version, so copy
+                the exact name from the upstream listing
+          - [ ] Recompute \`sha256\` (per-arch where the cask is multi-arch)
+          - [ ] \`brew style Casks/${name}.rb && brew audit --cask eventb-rossi/tap/${name}\`
+
+          _Opened automatically by the daily release-tracker workflow._
+          EOF
+          )"
+
+            echo "Filing issue: $title"
+            url="$(gh issue create --title "$title" --label livecheck --body "$body")"
+            new="${url##*/}"
+
+            # Supersede older open issues for the same cask (an earlier target version).
+            jq -r --arg p "${name}: " '.[] | select(.title | startswith($p)) | .number' <<<"$existing" |
+            while read -r num; do
+              gh issue close "$num" --comment "Superseded by #${new} (${title})."
+            done
+          done
