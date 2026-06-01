@@ -15,11 +15,11 @@ jobs:
       - name: Style
         run: brew style Casks/ Formula/
 
-      # Offline audit only. `--new`/`--online` download and Gatekeeper-assess
-      # the apps, which always fails for the unsigned Eclipse/Qt bundles
-      # ("the software has been altered"), so they are intentionally omitted.
-      - name: Audit casks
-        run: brew audit --cask eventb-rossi/tap/rodin eventb-rossi/tap/rodin@rc eventb-rossi/tap/atelier-b
-
-      - name: Audit formulae
-        run: brew audit --formula eventb-rossi/tap/evbt eventb-rossi/tap/tlc4b eventb-rossi/tap/b2program eventb-rossi/tap/eventb-to-txt
+      # Audit the whole tap by name rather than a hand-maintained list, so every
+      # formula and cask is covered automatically — a hardcoded list silently
+      # left out eventb-checker. Offline only: `--new`/`--online` download and
+      # Gatekeeper-assess the unsigned Eclipse/Qt bundles ("the software has been
+      # altered"), which always fails. Style is handled by the step above (audit
+      # skips style checks when no formula/cask is named).
+      - name: Audit
+        run: brew audit --tap=eventb-rossi/tap
