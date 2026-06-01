@@ -36,12 +36,14 @@ only one at a time.
 | `evbt`  | 1.5.0   | [EventBTool](https://codeberg.org/viklauverk/EventBTool) — code generation and documentation from Event-B models |
 | `tlc4b` | 1.2.3   | [TLC4B](https://github.com/hhu-stups/tlc4b) — model-check classical B specifications by translating them to TLA+ and running TLC |
 | `b2program` | 0.1.0 (master) | [B2Program](https://github.com/favu100/b2program) — generate Java/C++/Python/Rust/TypeScript code from high-level B |
+| `eventb-to-txt` | 1.7 | [eventb-to-txt](https://github.com/eventb-rossi/eventb-to-txt) — convert Rodin Event-B models (`.bum`/`.buc`) to CamilleX plain text |
 
 ```sh
 brew install eventb-checker
 brew install evbt
 brew install tlc4b
 brew install b2program
+brew install eventb-to-txt
 ```
 
 ## Requirements
@@ -54,7 +56,8 @@ brew install b2program
   ```
 
   The `eventb-checker`, `evbt`, `tlc4b` and `b2program` formulae do not need a separate
-  JDK; Homebrew installs `openjdk` for them automatically.
+  JDK; Homebrew installs `openjdk` for them automatically. `eventb-to-txt` is a pure-Python
+  tool (Python 3.10+); Homebrew installs `python` for it automatically.
 
 - Rodin and Atelier B are **not notarized** by Apple. If Gatekeeper blocks an app from
   opening, clear the quarantine flag, e.g.:

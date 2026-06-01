@@ -36,6 +36,7 @@ jobs:
             eventb-rossi/tap/evbt
             eventb-rossi/tap/eventb-checker
             eventb-rossi/tap/tlc4b
+            eventb-rossi/tap/eventb-to-txt
 
   # Casks embed opaque build ids in their download URLs (timestamp + git hash), so
   # they can't be auto-bumped — file a tracking issue per new release instead.
