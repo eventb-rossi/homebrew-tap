@@ -21,6 +21,12 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - uses: Homebrew/actions/setup-homebrew@main
+        with:
+          # bump-formula-pr runs `brew audit`, which must resolve the formulae's
+          # homebrew/core dependencies (openjdk*). The Linux runner has no core
+          # tap and its API-based resolution failed there ("Can't find dependency
+          # 'openjdk@21'"), so clone the core tap explicitly.
+          core: true
       - uses: ./.github/actions/setup-tap
 
       # Build the formula list from the tap contents instead of a hand-maintained
