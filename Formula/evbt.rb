@@ -9,7 +9,16 @@ class Evbt < Formula
 
   livecheck do
     url :stable
-    strategy :github_releases
+    regex(/^v?(\d+(?:\.\d+)+)$/i)
+    # Upstream flags every release as a prerelease, so the default
+    # :github_releases filter never matches anything — only skip drafts.
+    strategy :github_releases do |json, regex|
+      json.filter_map do |release|
+        next if release["draft"]
+
+        release["tag_name"]&.[](regex, 1)
+      end
+    end
   end
 
   # EventBTool requires Java 22 or later.
