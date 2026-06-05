@@ -1,8 +1,8 @@
 class EventbChecker < Formula
   desc "Standalone validator for Event-B models, no Rodin installation required"
   homepage "https://github.com/eventb-rossi/eventb-checker"
-  url "https://github.com/eventb-rossi/eventb-checker/archive/refs/tags/v1.2.tar.gz"
-  sha256 "5e350b013b55c55218064cab554c5b1ba5ad8ad5514ac0532c4bf650ca28f6ef"
+  url "https://github.com/eventb-rossi/eventb-checker/archive/refs/tags/v1.3.tar.gz"
+  sha256 "e00fe35b03325e5ebf1aaf4e3f57cb841e7d65296d8cc7ced06b71da31a2441b"
   license "MIT"
 
   livecheck do
