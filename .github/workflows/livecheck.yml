@@ -16,13 +16,27 @@ permissions:
 jobs:
   # GitHub-sourced formulae have version-derivable URLs, so the version + sha256
   # bump is mechanical: open update PRs via Homebrew's official action.
-  # (b2program is intentionally absent — its livecheck is `skip`-ed upstream.)
   bump-formulae:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
       - uses: Homebrew/actions/setup-homebrew@main
       - uses: ./.github/actions/setup-tap
+
+      # Build the formula list from the tap contents instead of a hand-maintained
+      # list (a hardcoded one silently dropped formulae before — see ci.yml).
+      # bump-packages expects the names space-separated on ONE line: it parses the
+      # input with `read -a`, which stops at the first newline, so a YAML block
+      # list silently checked only the first formula. b2program needs no
+      # exclusion: its livecheck is `skip`-ed upstream and `brew bump` skips it
+      # gracefully.
+      - name: List formulae
+        id: formulae
+        run: |
+          names=$(for f in Formula/*.rb; do
+            printf 'eventb-rossi/tap/%s ' "$(basename "$f" .rb)"
+          done)
+          echo "list=${names% }" >> "$GITHUB_OUTPUT"
 
       - name: Open PRs for outdated formulae
         uses: Homebrew/actions/bump-packages@master
@@ -32,11 +46,7 @@ jobs:
           # to a PAT with Contents + Pull requests: write (or classic `public_repo`).
           token: ${{ secrets.HOMEBREW_BUMP_PAT }}
           fork: false            # we own the tap; push the bump branch directly
-          formulae: |
-            eventb-rossi/tap/evbt
-            eventb-rossi/tap/eventb-checker
-            eventb-rossi/tap/tlc4b
-            eventb-rossi/tap/eventb-to-txt
+          formulae: ${{ steps.formulae.outputs.list }}
 
   # Casks embed opaque build ids in their download URLs (timestamp + git hash), so
   # they can't be auto-bumped — file a tracking issue per new release instead.
