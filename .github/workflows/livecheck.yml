@@ -18,6 +18,11 @@ jobs:
   # bump is mechanical: open update PRs via Homebrew's official action.
   bump-formulae:
     runs-on: ubuntu-latest
+    # brew bump-formula-pr commits the version bump; brew takes the git
+    # author/committer identity from these (the runner has none configured).
+    env:
+      HOMEBREW_GIT_NAME: github-actions[bot]
+      HOMEBREW_GIT_EMAIL: 41898282+github-actions[bot]@users.noreply.github.com
     steps:
       - uses: actions/checkout@v6
       - uses: Homebrew/actions/setup-homebrew@main
