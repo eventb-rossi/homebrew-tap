@@ -32,7 +32,8 @@ only one at a time.
 
 | Formula | Version | Description                                                                 |
 | ------- | ------- | --------------------------------------------------------------------------- |
-| `eventb-checker` | 1.2 | [eventb-checker](https://github.com/eventb-rossi/eventb-checker) — validate Event-B models (`.bum`/`.buc`/`.eventb` or `.zip`) without a Rodin installation |
+| `eventb-checker` | 1.3 | [eventb-checker](https://github.com/eventb-rossi/eventb-checker) — validate Event-B models (`.bum`/`.buc`/`.eventb` or `.zip`) without a Rodin installation |
+| `eventb-animate` | 5.0 | [eventb-animate](https://github.com/eventb-rossi/eventb-animate) — animate Event-B models with the ProB model checker (random animation, invariant checking, trace save/replay) |
 | `evbt`  | 1.5.0   | [EventBTool](https://codeberg.org/viklauverk/EventBTool) — code generation and documentation from Event-B models |
 | `tlc4b` | 1.2.3   | [TLC4B](https://github.com/hhu-stups/tlc4b) — model-check classical B specifications by translating them to TLA+ and running TLC |
 | `b2program` | 0.1.0 (master) | [B2Program](https://github.com/favu100/b2program) — generate Java/C++/Python/Rust/TypeScript code from high-level B |
@@ -40,6 +41,7 @@ only one at a time.
 
 ```sh
 brew install eventb-checker
+brew install eventb-animate
 brew install evbt
 brew install tlc4b
 brew install b2program
@@ -55,8 +57,8 @@ brew install eventb-to-txt
   brew install --cask temurin
   ```
 
-  The `eventb-checker`, `evbt`, `tlc4b` and `b2program` formulae do not need a separate
-  JDK; Homebrew installs `openjdk` for them automatically. `eventb-to-txt` is a pure-Python
+  The `eventb-checker`, `eventb-animate`, `evbt`, `tlc4b` and `b2program` formulae do not
+  need a separate JDK; Homebrew installs `openjdk` for them automatically. `eventb-to-txt` is a pure-Python
   tool (Python 3.10+); Homebrew installs `python` for it automatically.
 
 - Rodin and Atelier B are **not notarized** by Apple. If Gatekeeper blocks an app from
