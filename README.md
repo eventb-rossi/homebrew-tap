@@ -1,8 +1,8 @@
 # Homebrew Tap for Event-B Rossi
 
 Homebrew formulae and casks for the [Event-B](https://www.event-b.org/) / B-method
-ecosystem — the Rodin Platform IDE, the EventBTool code/documentation generator, and
-ClearSy's Atelier B.
+ecosystem — the Rodin Platform IDE, the EventBTool code/documentation generator,
+ClearSy's Atelier B, and the ProB2-UI animator and model checker.
 
 ## Install
 
@@ -17,11 +17,13 @@ brew tap eventb-rossi/tap
 | `rodin`     | 3.9 (stable)                 | Intel (x86_64) only            | Rodin Platform — Event-B IDE      |
 | `rodin@rc`  | 3.10-RC2 (release candidate) | Intel + Apple Silicon (native) | Rodin Platform pre-release        |
 | `atelier-b` | 24.04.2 (Community Edition)  | Intel + Apple Silicon (native) | Atelier B — IDE for the B method  |
+| `prob2-ui`  | 1.3.1 (stable)               | Intel + Apple Silicon (native) | ProB2-UI — JavaFX GUI for ProB    |
 
 ```sh
 brew install --cask rodin        # stable 3.9 — Intel Macs only
 brew install --cask rodin@rc     # 3.10 release candidate — Intel + Apple Silicon
 brew install --cask atelier-b    # Atelier B Community Edition
+brew install --cask prob2-ui     # ProB2-UI — ProB animator/model checker GUI
 ```
 
 On Apple Silicon use `rodin@rc`; the `rodin` cask is Intel-only and will refuse to
@@ -61,10 +63,12 @@ brew install eventb-to-txt
   need a separate JDK; Homebrew installs `openjdk` for them automatically. `eventb-to-txt` is a pure-Python
   tool (Python 3.10+); Homebrew installs `python` for it automatically.
 
-- Rodin and Atelier B are **not notarized** by Apple. If Gatekeeper blocks an app from
-  opening, clear the quarantine flag, e.g.:
+- Rodin, Atelier B and the **Intel** ProB2-UI build are **not notarized** by Apple (the
+  Apple Silicon ProB2-UI build is notarized). If Gatekeeper blocks an app from opening,
+  clear the quarantine flag, e.g.:
 
   ```sh
   xattr -dr com.apple.quarantine /Applications/rodin.app
   xattr -dr com.apple.quarantine "/Applications/Atelier B.app"
+  xattr -dr com.apple.quarantine /Applications/ProB2-UI.app
   ```
