@@ -21,6 +21,14 @@ cask "rodin" do
 
   app "rodin.app"
 
+  postflight do
+    ini = "#{appdir}/rodin.app/Contents/Eclipse/rodin.ini"
+    contents = File.read(ini)
+    unless contents.include?("org.eclipse.e4.ui.css.swt.theme")
+      File.open(ini, "a") { |f| f.puts "-Dorg.eclipse.e4.ui.css.swt.theme=org.eclipse.e4.ui.css.theme.e4_default" }
+    end
+  end
+
   zap trash: [
     "~/Library/Application Support/rodin",
     "~/Library/Preferences/org.rodinp.platform.plist",
