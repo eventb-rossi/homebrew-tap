@@ -53,9 +53,10 @@ jobs:
         uses: Homebrew/actions/bump-packages@master
         with:
           # Default GITHUB_TOKEN can't push branches / open PRs that re-trigger CI,
-          # and brew bump needs write access. Set the repo secret HOMEBREW_BUMP_PAT
-          # to a PAT with Contents + Pull requests: write (or classic `public_repo`).
-          token: ${{ secrets.HOMEBREW_BUMP_PAT }}
+          # and brew bump needs write access. Uses the org secret VERSION_BUMP_TOKEN
+          # (a PAT with Contents + Pull requests: write), shared across the
+          # eventb-rossi packaging repos.
+          token: ${{ secrets.VERSION_BUMP_TOKEN }}
           fork: false            # we own the tap; push the bump branch directly
           formulae: ${{ steps.formulae.outputs.list }}
 
@@ -70,7 +71,7 @@ jobs:
 
       - name: File issues for outdated casks
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ github.token }}   # issue create/update only; no org PAT needed
         run: |
           set -euo pipefail
 
