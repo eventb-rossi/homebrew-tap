@@ -27,11 +27,26 @@ cask "rodin" do
     unless contents.include?("org.eclipse.e4.ui.css.swt.theme")
       File.open(ini, "a") { |f| f.puts "-Dorg.eclipse.e4.ui.css.swt.theme=org.eclipse.e4.ui.css.theme.e4_default" }
     end
+
+    # The e4 CSS theme above only pins the Eclipse-drawn widgets. On a dark-mode
+    # Mac, SWT also picks its dark theme and flips the native Cocoa controls dark
+    # (a broken mixed UI). SWT's Display.isSystemDarkTheme() reads the
+    # "AppleInterfaceStyle" user default via NSUserDefaults.standardUserDefaults,
+    # whose per-app domain shadows the global one. Pinning it to "Light" in
+    # Rodin's own domain makes SWT choose the light theme and turn the native
+    # appearance light too. This is the macOS analog of forcing
+    # GTK_THEME=Adwaita:light on Linux, scoped to Rodin's bundle id only.
+    # (NSRequiresAquaSystemAppearance is ignored on modern macOS, so it cannot be
+    # used for this.)
+    system_command "/usr/bin/defaults",
+                   args: ["write", "org.rodinp.platform.product",
+                          "AppleInterfaceStyle", "-string", "Light"]
   end
 
   zap trash: [
     "~/Library/Application Support/rodin",
     "~/Library/Preferences/org.rodinp.platform.plist",
+    "~/Library/Preferences/org.rodinp.platform.product.plist",
   ]
 
   caveats <<~EOS
