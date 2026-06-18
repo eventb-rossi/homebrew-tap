@@ -24,7 +24,7 @@ jobs:
       HOMEBREW_GIT_NAME: github-actions[bot]
       HOMEBREW_GIT_EMAIL: 41898282+github-actions[bot]@users.noreply.github.com
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: Homebrew/actions/setup-homebrew@main
         with:
           # bump-formula-pr runs `brew audit`, which must resolve the formulae's
@@ -65,7 +65,7 @@ jobs:
   track-casks:
     runs-on: macos-latest        # Linux Homebrew cannot livecheck casks
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: Homebrew/actions/setup-homebrew@main
       - uses: ./.github/actions/setup-tap
 
