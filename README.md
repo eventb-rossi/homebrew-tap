@@ -41,6 +41,7 @@ only one at a time.
 | `b2program` | [B2Program](https://github.com/favu100/b2program) — generate Java/C++/Python/Rust/TypeScript code from high-level B |
 | `eventb-to-txt` | [eventb-to-txt](https://github.com/eventb-rossi/eventb-to-txt) — convert Rodin Event-B models (`.bum`/`.buc`) to CamilleX plain text |
 | `prob` | [ProB](https://prob.hhu.de/) — animator, constraint solver and model checker for B, Event-B, CSP-M, TLA+ and Z (`probcli` CLI + Tcl/Tk GUI `prob-tk`) |
+| `rossi` | [Rossi](https://github.com/eventb-rossi/rossi) — Rust toolchain for Event-B: validate, import/export Rodin archives, format, static-check (`rossi` CLI) and a language server (`rossi lsp` or the bundled `eventb-language-server`) |
 
 ```sh
 brew install eventb-checker
@@ -50,6 +51,7 @@ brew install tlc4b
 brew install b2program
 brew install eventb-to-txt
 brew install prob
+brew install rossi
 ```
 
 ## Requirements
@@ -63,7 +65,8 @@ brew install prob
 
   The `eventb-checker`, `eventb-animate`, `evbt`, `tlc4b` and `b2program` formulae do not
   need a separate JDK; Homebrew installs `openjdk` for them automatically. `eventb-to-txt` is a pure-Python
-  tool (Python 3.10+); Homebrew installs `python` for it automatically.
+  tool (Python 3.10+); Homebrew installs `python` for it automatically. `rossi` is a self-contained
+  native binary (built from Rust) and needs no runtime dependencies.
 
 - **ProB** (`prob`) runs natively on Intel and Apple Silicon; Homebrew installs its
   `openjdk` and `tcl-tk@8` dependencies automatically. Its bundled CSP-M parser
