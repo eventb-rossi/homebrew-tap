@@ -66,7 +66,7 @@ brew install rossi
   The `eventb-checker`, `eventb-animate`, `evbt`, `tlc4b` and `b2program` formulae do not
   need a separate JDK; Homebrew installs `openjdk` for them automatically. `eventb-to-txt` is a pure-Python
   tool (Python 3.10+); Homebrew installs `python` for it automatically. `rossi` is a self-contained
-  native binary (built from Rust) and needs no runtime dependencies.
+  prebuilt native binary (written in Rust) and needs no runtime dependencies.
 
 - **ProB** (`prob`) runs natively on Intel and Apple Silicon; Homebrew installs its
   `openjdk` and `tcl-tk@8` dependencies automatically. Its bundled CSP-M parser

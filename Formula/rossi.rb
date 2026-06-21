@@ -1,28 +1,48 @@
 class Rossi < Formula
   desc "Rust toolchain for Event-B: parser, static checker, CLI, and language server"
   homepage "https://github.com/eventb-rossi/rossi"
-  url "https://github.com/eventb-rossi/rossi/archive/refs/tags/v0.1.0.tar.gz"
-  sha256 "8ce0f1b23dc30c638c284234a0d48aaa5184d286adcb03afdccae341c8e07df1"
   license any_of: ["Apache-2.0", "MIT"]
 
   livecheck do
-    # Rossi releases every workspace crate in lockstep to crates.io; track the
-    # rossi-cli crate (the `rossi` binary) there rather than GitHub releases. The
-    # Crate strategy only needs the package name from this URL; the version
-    # placeholder keeps it valid across bumps.
-    url "https://static.crates.io/crates/rossi-cli/rossi-cli-#{version}.crate"
-    strategy :crate
+    # We package the prebuilt binaries from upstream's GitHub releases, so track
+    # those releases directly: a new release (with fresh binaries) is exactly what
+    # a formula bump needs.
+    url :stable
+    strategy :github_latest
   end
 
-  depends_on "rust" => :build
+  # Upstream ships official prebuilt binaries for every platform Homebrew supports;
+  # each tarball bundles both `rossi` and `eventb-language-server` at its root.
+  #
+  # `tag:` pins the version for Homebrew's autodetection. The asset names carry no
+  # version, and the `x86_64` in the Intel names defeats detection (it scans `64`
+  # out of `x86_64`); `tag:` makes every arch resolve to 0.1.0 and is kept in sync
+  # by `brew bump-formula-pr`. Do not remove it.
+  on_macos do
+    on_arm do
+      url "https://github.com/eventb-rossi/rossi/releases/download/v0.1.0/rossi-aarch64-apple-darwin.tar.gz", tag: "0.1.0"
+      sha256 "80f5410ca364367d23c9505d0c10ec6b139246b3d6108f8e3489660ab6c9c4b3"
+    end
+    on_intel do
+      url "https://github.com/eventb-rossi/rossi/releases/download/v0.1.0/rossi-x86_64-apple-darwin.tar.gz", tag: "0.1.0"
+      sha256 "5bd3903a2d5ca81318eafed95881d70af05d08f3634ccd320af1b2ae5cd16b2e"
+    end
+  end
+  on_linux do
+    on_arm do
+      url "https://github.com/eventb-rossi/rossi/releases/download/v0.1.0/rossi-aarch64-unknown-linux-gnu.tar.gz", tag: "0.1.0"
+      sha256 "f86d6bd2e062a414ee64fc36d8c9af5a68fda5167c4bb59040f3073ecf33a57e"
+    end
+    on_intel do
+      url "https://github.com/eventb-rossi/rossi/releases/download/v0.1.0/rossi-x86_64-unknown-linux-gnu.tar.gz", tag: "0.1.0"
+      sha256 "654d1e1e219b49553d3052574ddcfc9f7ab3408d30f06acc0474500dca72d511"
+    end
+  end
 
   def install
-    # Two binaries from one Cargo workspace, each its crate's sole bin:
-    #   crates/rossi-cli  -> `rossi` (validate/import/export/fmt/build/lsp)
-    #   crates/eventb-lsp -> `eventb-language-server` (the editor-facing LSP; the
-    #                        same server as `rossi lsp`, under the name editors expect)
-    system "cargo", "install", *std_cargo_args(path: "crates/rossi-cli")
-    system "cargo", "install", *std_cargo_args(path: "crates/eventb-lsp")
+    # Both binaries and the dual licenses sit at the tarball root.
+    bin.install "rossi", "eventb-language-server"
+    prefix.install "LICENSE-APACHE", "LICENSE-MIT"
   end
 
   test do
