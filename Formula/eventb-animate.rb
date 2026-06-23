@@ -16,7 +16,7 @@ class EventbAnimate < Formula
   depends_on "openjdk"
 
   def install
-    ENV["JAVA_HOME"] = Formula["openjdk@21"].opt_prefix
+    ENV["JAVA_HOME"] = formula_opt_prefix("openjdk@21")
     ENV["GRADLE_USER_HOME"] = buildpath/".gradle"
     system "./gradlew", "--no-daemon", "shadowJar", "-x", "test"
 
@@ -26,7 +26,7 @@ class EventbAnimate < Formula
     # warnings emitted by the bundled Guice on JDK 24+.
     (bin/"eventb-animate").write <<~EOS
       #!/bin/bash
-      exec "#{Formula["openjdk"].opt_bin}/java" --sun-misc-unsafe-memory-access=allow -jar "#{libexec}/eventb-animate.jar" "$@"
+      exec "#{formula_opt_bin("openjdk")}/java" --sun-misc-unsafe-memory-access=allow -jar "#{libexec}/eventb-animate.jar" "$@"
     EOS
     (bin/"eventb-animate").chmod 0555
   end

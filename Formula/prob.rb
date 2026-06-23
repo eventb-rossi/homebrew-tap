@@ -25,7 +25,7 @@ class Prob < Formula
     # Homebrew's java on PATH so the Java-backed features resolve a JDK.
     (bin/"probcli").write <<~EOS
       #!/bin/bash
-      export PATH="#{Formula["openjdk"].opt_bin}:$PATH"
+      export PATH="#{formula_opt_bin("openjdk")}:$PATH"
       exec "#{libexec}/probcli.sh" "$@"
     EOS
     (bin/"probcli").chmod 0555
@@ -35,8 +35,8 @@ class Prob < Formula
     # the script's Cellar glob.
     (bin/"prob-tk").write <<~EOS
       #!/bin/bash
-      export PATH="#{Formula["openjdk"].opt_bin}:$PATH"
-      export SP_TCL_DSO="#{Formula["tcl-tk@8"].opt_lib}/libtcl8.6.dylib"
+      export PATH="#{formula_opt_bin("openjdk")}:$PATH"
+      export SP_TCL_DSO="#{formula_opt_lib("tcl-tk@8")}/libtcl8.6.dylib"
       exec "#{libexec}/StartProB.sh" "$@"
     EOS
     (bin/"prob-tk").chmod 0555

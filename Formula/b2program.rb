@@ -19,7 +19,7 @@ class B2program < Formula
   depends_on "openjdk"
 
   def install
-    ENV["JAVA_HOME"] = Formula["openjdk@21"].opt_prefix
+    ENV["JAVA_HOME"] = formula_opt_prefix("openjdk@21")
     ENV["GRADLE_USER_HOME"] = buildpath/".gradle"
     system "./gradlew", "--no-daemon", "fatJar", "-x", "test"
 
@@ -27,7 +27,7 @@ class B2program < Formula
     # Pin Homebrew's openjdk so the tool runs regardless of the user's JAVA_HOME.
     (bin/"b2program").write <<~EOS
       #!/bin/bash
-      exec "#{Formula["openjdk"].opt_bin}/java" -jar "#{libexec}/b2program.jar" "$@"
+      exec "#{formula_opt_bin("openjdk")}/java" -jar "#{libexec}/b2program.jar" "$@"
     EOS
     (bin/"b2program").chmod 0555
   end

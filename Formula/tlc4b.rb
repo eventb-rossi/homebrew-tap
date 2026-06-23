@@ -37,7 +37,7 @@ class Tlc4b < Formula
       }
     EOS
 
-    ENV["JAVA_HOME"] = Formula["openjdk@21"].opt_prefix
+    ENV["JAVA_HOME"] = formula_opt_prefix("openjdk@21")
     ENV["GRADLE_USER_HOME"] = buildpath/".gradle"
     system "./gradlew", "--no-daemon", "-I", "homebrew-fatjar.gradle", "jar", "-x", "test"
 
@@ -45,7 +45,7 @@ class Tlc4b < Formula
     # Pin Homebrew's openjdk so the tool runs regardless of the user's JAVA_HOME.
     (bin/"tlc4b").write <<~EOS
       #!/bin/bash
-      exec "#{Formula["openjdk"].opt_bin}/java" -jar "#{libexec}/tlc4b.jar" "$@"
+      exec "#{formula_opt_bin("openjdk")}/java" -jar "#{libexec}/tlc4b.jar" "$@"
     EOS
     (bin/"tlc4b").chmod 0555
   end

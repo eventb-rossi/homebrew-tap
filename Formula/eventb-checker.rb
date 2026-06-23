@@ -16,7 +16,7 @@ class EventbChecker < Formula
   depends_on "openjdk"
 
   def install
-    ENV["JAVA_HOME"] = Formula["openjdk@21"].opt_prefix
+    ENV["JAVA_HOME"] = formula_opt_prefix("openjdk@21")
     ENV["GRADLE_USER_HOME"] = buildpath/".gradle"
     system "./gradlew", "--no-daemon", "shadowJar", "-x", "test"
 
@@ -26,7 +26,7 @@ class EventbChecker < Formula
     # bundled Rodin AST libraries (and pre-empts their hard removal in a future JDK).
     (bin/"eventb-checker").write <<~EOS
       #!/bin/bash
-      exec "#{Formula["openjdk"].opt_bin}/java" --enable-native-access=ALL-UNNAMED -jar "#{libexec}/eventb-checker.jar" "$@"
+      exec "#{formula_opt_bin("openjdk")}/java" --enable-native-access=ALL-UNNAMED -jar "#{libexec}/eventb-checker.jar" "$@"
     EOS
     (bin/"eventb-checker").chmod 0555
   end

@@ -30,7 +30,7 @@ class Evbt < Formula
     # which may point at an older JDK that EventBTool refuses to run on.
     (bin/"evbt").write <<~EOS
       #!/bin/bash
-      exec "#{Formula["openjdk"].opt_bin}/java" -jar "#{libexec}/evbt.jar" "$@"
+      exec "#{formula_opt_bin("openjdk")}/java" -jar "#{libexec}/evbt.jar" "$@"
     EOS
     (bin/"evbt").chmod 0555
   end
