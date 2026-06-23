@@ -2,8 +2,12 @@ name: Release tracker
 
 on:
   schedule:
-    - cron: "17 7 * * *"   # daily, 07:17 UTC (off the hour to dodge scheduler load)
+    - cron: "17 7 * * *"   # daily, 07:17 UTC (safety net + third-party upstreams)
   workflow_dispatch: {}
+  # An eventb-rossi upstream tool just released: scan now instead of waiting for
+  # tomorrow's cron (dispatched by eventb-rossi/release-automation).
+  repository_dispatch:
+    types: [upstream-release]
 
 concurrency:
   group: release-tracker
