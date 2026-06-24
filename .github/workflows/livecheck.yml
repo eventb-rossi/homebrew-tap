@@ -49,14 +49,15 @@ jobs:
         id: formulae
         run: |
           names=$(for f in Formula/*.rb; do
-            name="$(basename "$f" .rb)"
-            # rossi ships per-arch prebuilt binaries (4 url/sha256 pairs inside
-            # on_macos/on_linux blocks). brew bump-formula-pr only rewrites a
-            # top-level url stanza, so it dies on rossi with "Could not find 'url'
-            # stanza!" and fails the whole job. It's bumped manually on each
-            # upstream release (which already dispatches this workflow).
-            [ "$name" = "rossi" ] && continue
-            printf 'eventb-rossi/tap/%s ' "$name"
+            # brew bump-formula-pr can only rewrite a TOP-LEVEL url stanza, so a
+            # formula whose urls are all nested in on_os/on_arch blocks (rossi's
+            # per-arch prebuilt binaries) makes it die with "Could not find 'url'
+            # stanza!" and fails the whole job. Skip such formulae by that very
+            # property — so any future prebuilt-binary formula is excluded
+            # automatically — and let the dedicated bump-rossi job below handle
+            # them instead.
+            grep -qE '^  url "' "$f" || continue
+            printf 'eventb-rossi/tap/%s ' "$(basename "$f" .rb)"
           done)
           echo "list=${names% }" >> "$GITHUB_OUTPUT"
 
@@ -70,6 +71,78 @@ jobs:
           token: ${{ secrets.VERSION_BUMP_TOKEN }}
           fork: false            # we own the tap; push the bump branch directly
           formulae: ${{ steps.formulae.outputs.list }}
+
+  # rossi ships per-arch prebuilt binaries (4 url/sha256 pairs in on_os/on_arch
+  # blocks), which brew bump-formula-pr can't rewrite ("Could not find 'url'
+  # stanza!" — it only edits a top-level url stanza). Bump it ourselves: detect
+  # via livecheck, recompute the four sha256s from the release assets, rewrite the
+  # formula, and open an auto-merge PR.
+  bump-rossi:
+    runs-on: ubuntu-latest
+    # Used as the git author/committer for the bump commit (the runner has none).
+    env:
+      HOMEBREW_GIT_NAME: github-actions[bot]
+      HOMEBREW_GIT_EMAIL: 41898282+github-actions[bot]@users.noreply.github.com
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # Push the bump branch + open a PR that re-triggers CI (the default
+          # GITHUB_TOKEN can't), so auto-merge can gate on the ci.yml checks.
+          token: ${{ secrets.VERSION_BUMP_TOKEN }}
+      - uses: Homebrew/actions/setup-homebrew@main
+      - uses: ./.github/actions/setup-tap
+
+      - name: Bump rossi if a newer release exists
+        env:
+          GH_TOKEN: ${{ secrets.VERSION_BUMP_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          # Detect with the same livecheck used for every other formula.
+          json="$(brew livecheck eventb-rossi/tap/rossi --newer-only --json)"
+          [ "$(jq 'length' <<<"$json")" -eq 0 ] && { echo "rossi is up to date"; exit 0; }
+          old="$(jq -r '.[0].version.current' <<<"$json")"
+          new="$(jq -r '.[0].version.latest'  <<<"$json")"
+          branch="bump-rossi-$new"
+          echo "Bumping rossi $old -> $new"
+
+          # Idempotent: skip if a PR for this version was already opened.
+          if [ "$(gh pr list --head "$branch" --state all --json number --jq 'length')" -ne 0 ]; then
+            echo "PR for $branch already exists"; exit 0
+          fi
+
+          f=Formula/rossi.rb
+          # The version appears only in the url paths and the tag: pins.
+          sed -i "s|/download/v$old/|/download/v$new/|g; s|tag: \"$old\"|tag: \"$new\"|g" "$f"
+          # Recompute every arch's sha256 from its (now version-bumped) release
+          # asset, driven by the formula's own url list — so adding or dropping a
+          # platform needs no change here. Downloading also confirms each asset
+          # exists, and we hash exactly the urls the formula will ship.
+          for u in $(grep -oE 'https://[^"]+\.tar\.gz' "$f"); do
+            sum="$(curl -fsSL "$u" | sha256sum | cut -d' ' -f1)"
+            awk -v a="$u" -v s="$sum" '
+              index($0, a) { hit=1 }
+              hit && /sha256 "/ { sub(/sha256 "[0-9a-f]+"/, "sha256 \"" s "\""); hit=0 }
+              { print }' "$f" > "$f.tmp" && mv "$f.tmp" "$f"
+          done
+
+          # Gate the bump on the same checks ci.yml runs.
+          brew style "$f"
+          brew audit --formula eventb-rossi/tap/rossi
+
+          git config user.name  "$HOMEBREW_GIT_NAME"
+          git config user.email "$HOMEBREW_GIT_EMAIL"
+          git switch -c "$branch"
+          git commit -am "rossi $new"
+          # Force-push is safe: the guard above guarantees no PR references this
+          # branch, so any existing remote branch is an orphan from a failed run.
+          git push -u --force origin "$branch"
+          url="$(gh pr create --base main --head "$branch" --title "rossi $new" \
+            --body "Automated bump of \`rossi\` $old → $new. Per-arch sha256 values recomputed from the v$new release assets. \`brew bump-formula-pr\` can't rewrite rossi's on_os/on_arch urls, so the release tracker bumps it with this dedicated job.")"
+          # Non-fatal: if "Allow auto-merge"/required checks aren't configured the
+          # PR is still opened for manual merge (and the guard above skips re-runs).
+          gh pr merge --auto --squash "$url" \
+            || echo "::warning::Could not enable auto-merge; merge $url manually."
 
   # Casks embed opaque build ids in their download URLs (timestamp + git hash), so
   # they can't be auto-bumped — file a tracking issue per new release instead.

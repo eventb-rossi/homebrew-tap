@@ -17,10 +17,10 @@ class Rossi < Formula
   # `tag:` pins the version for Homebrew: the asset names carry no version and the
   # `x86_64` in the Intel names defeats autodetection (it scans `64` out of
   # `x86_64`), while an explicit top-level `version` would be rejected by
-  # `brew audit` as redundant with the version in the `/v0.1.1/` URL path. Bump
-  # rossi by hand on each upstream release: `brew bump-formula-pr` can't rewrite
-  # these per-arch urls (they live in on_os/on_arch blocks, not a top-level url
-  # stanza), so update the four `tag:`, url, and sha256 values together.
+  # `brew audit` as redundant with the version in the `/v<version>/` URL path.
+  # `brew bump-formula-pr` can't rewrite these per-arch urls (they live in
+  # on_os/on_arch blocks, not a top-level url stanza), so the release tracker's
+  # bump-rossi job updates the four `tag:`, url, and sha256 values together.
   on_macos do
     on_arm do
       url "https://github.com/eventb-rossi/rossi/releases/download/v0.1.1/rossi-aarch64-apple-darwin.tar.gz", tag: "0.1.1"
