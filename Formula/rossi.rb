@@ -14,28 +14,31 @@ class Rossi < Formula
   # Upstream ships official prebuilt binaries for every platform Homebrew supports;
   # each tarball bundles both `rossi` and `eventb-language-server` at its root.
   #
-  # `tag:` pins the version for Homebrew's autodetection. The asset names carry no
-  # version, and the `x86_64` in the Intel names defeats detection (it scans `64`
-  # out of `x86_64`); `tag:` makes every arch resolve to 0.1.0 and is kept in sync
-  # by `brew bump-formula-pr`. Do not remove it.
+  # `tag:` pins the version for Homebrew: the asset names carry no version and the
+  # `x86_64` in the Intel names defeats autodetection (it scans `64` out of
+  # `x86_64`), while an explicit top-level `version` would be rejected by
+  # `brew audit` as redundant with the version in the `/v0.1.1/` URL path. Bump
+  # rossi by hand on each upstream release: `brew bump-formula-pr` can't rewrite
+  # these per-arch urls (they live in on_os/on_arch blocks, not a top-level url
+  # stanza), so update the four `tag:`, url, and sha256 values together.
   on_macos do
     on_arm do
-      url "https://github.com/eventb-rossi/rossi/releases/download/v0.1.0/rossi-aarch64-apple-darwin.tar.gz", tag: "0.1.0"
-      sha256 "80f5410ca364367d23c9505d0c10ec6b139246b3d6108f8e3489660ab6c9c4b3"
+      url "https://github.com/eventb-rossi/rossi/releases/download/v0.1.1/rossi-aarch64-apple-darwin.tar.gz", tag: "0.1.1"
+      sha256 "7d5104b1e3541bbbd35af9b089eeec461cc78086d3554d6fa3d98974cf0a2759"
     end
     on_intel do
-      url "https://github.com/eventb-rossi/rossi/releases/download/v0.1.0/rossi-x86_64-apple-darwin.tar.gz", tag: "0.1.0"
-      sha256 "5bd3903a2d5ca81318eafed95881d70af05d08f3634ccd320af1b2ae5cd16b2e"
+      url "https://github.com/eventb-rossi/rossi/releases/download/v0.1.1/rossi-x86_64-apple-darwin.tar.gz", tag: "0.1.1"
+      sha256 "9c4239ca6fc067752bfee31a08f29f8abad8b8ecfacaff246c94966cc941a27d"
     end
   end
   on_linux do
     on_arm do
-      url "https://github.com/eventb-rossi/rossi/releases/download/v0.1.0/rossi-aarch64-unknown-linux-gnu.tar.gz", tag: "0.1.0"
-      sha256 "f86d6bd2e062a414ee64fc36d8c9af5a68fda5167c4bb59040f3073ecf33a57e"
+      url "https://github.com/eventb-rossi/rossi/releases/download/v0.1.1/rossi-aarch64-unknown-linux-gnu.tar.gz", tag: "0.1.1"
+      sha256 "f807995f66b0829491dbfb692a6af45e460334465f9c41494983c1c1f58ecff0"
     end
     on_intel do
-      url "https://github.com/eventb-rossi/rossi/releases/download/v0.1.0/rossi-x86_64-unknown-linux-gnu.tar.gz", tag: "0.1.0"
-      sha256 "654d1e1e219b49553d3052574ddcfc9f7ab3408d30f06acc0474500dca72d511"
+      url "https://github.com/eventb-rossi/rossi/releases/download/v0.1.1/rossi-x86_64-unknown-linux-gnu.tar.gz", tag: "0.1.1"
+      sha256 "2b4945695474f6f1d9f79e5184b82112c628a59e08d0c6fd0f1136b18b90726b"
     end
   end
 
