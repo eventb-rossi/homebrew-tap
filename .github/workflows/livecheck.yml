@@ -49,7 +49,14 @@ jobs:
         id: formulae
         run: |
           names=$(for f in Formula/*.rb; do
-            printf 'eventb-rossi/tap/%s ' "$(basename "$f" .rb)"
+            name="$(basename "$f" .rb)"
+            # rossi ships per-arch prebuilt binaries (4 url/sha256 pairs inside
+            # on_macos/on_linux blocks). brew bump-formula-pr only rewrites a
+            # top-level url stanza, so it dies on rossi with "Could not find 'url'
+            # stanza!" and fails the whole job. It's bumped manually on each
+            # upstream release (which already dispatches this workflow).
+            [ "$name" = "rossi" ] && continue
+            printf 'eventb-rossi/tap/%s ' "$name"
           done)
           echo "list=${names% }" >> "$GITHUB_OUTPUT"
 
