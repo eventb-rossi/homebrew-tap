@@ -90,6 +90,13 @@ jobs:
           # GITHUB_TOKEN can't), so auto-merge can gate on the ci.yml checks.
           token: ${{ secrets.VERSION_BUMP_TOKEN }}
       - uses: Homebrew/actions/setup-homebrew@main
+        with:
+          # actions/checkout@v7 no longer persists the token inline in
+          # .git/config (it moved to an includeIf-referenced file under
+          # RUNNER_TEMP), so the manual `git push` below ran unauthenticated
+          # ("could not read Username"). Hand setup-homebrew the same token so it
+          # sets the global github.com credential, which persists for the job.
+          token: ${{ secrets.VERSION_BUMP_TOKEN }}
       - uses: ./.github/actions/setup-tap
 
       - name: Bump rossi if a newer release exists
