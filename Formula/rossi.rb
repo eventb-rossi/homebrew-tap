@@ -46,6 +46,11 @@ class Rossi < Formula
     # Both binaries and the dual licenses sit at the tarball root.
     bin.install "rossi", "eventb-language-server"
     prefix.install "LICENSE-APACHE", "LICENSE-MIT"
+
+    # `rossi completions <shell>` prints a script generated from the CLI's own command tree,
+    # so it always matches the installed version. The helper runs the freshly installed
+    # binary once per shell (bash/zsh/fish) and drops each script in the right place.
+    generate_completions_from_executable(bin/"rossi", "completions")
   end
 
   test do
