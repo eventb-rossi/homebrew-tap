@@ -14,21 +14,20 @@ brew tap eventb-rossi/tap
 
 | Cask        | Architectures                  | Description                       |
 | ----------- | ------------------------------ | --------------------------------- |
-| `rodin`     | Intel (x86_64) only            | Rodin Platform — Event-B IDE      |
+| `rodin`     | Intel + Apple Silicon (native) | Rodin Platform — Event-B IDE      |
 | `rodin@rc`  | Intel + Apple Silicon (native) | Rodin Platform pre-release        |
 | `atelier-b` | Intel + Apple Silicon (native) | Atelier B — IDE for the B method  |
 | `prob2-ui`  | Intel + Apple Silicon (native) | ProB2-UI — JavaFX GUI for ProB    |
 
 ```sh
-brew install --cask rodin        # stable — Intel Macs only
+brew install --cask rodin        # stable — Intel + Apple Silicon
 brew install --cask rodin@rc     # release candidate — Intel + Apple Silicon
 brew install --cask atelier-b    # Atelier B Community Edition
 brew install --cask prob2-ui     # ProB2-UI — ProB animator/model checker GUI
 ```
 
-On Apple Silicon use `rodin@rc`; the `rodin` cask is Intel-only and will refuse to
-install. Both Rodin casks install the same `rodin.app` and therefore conflict — install
-only one at a time.
+Both Rodin casks install the same `rodin.app` and therefore conflict — install only
+one at a time.
 
 ### Formulae (command-line tools)
 

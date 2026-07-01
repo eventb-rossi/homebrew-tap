@@ -1,9 +1,12 @@
 cask "rodin" do
-  version "3.9"
-  sha256 "6a1663ab42c466c5fc7182fd794995f7442927f566309d6198df0923fbdd23bb"
+  arch arm: "aarch64", intel: "x86_64"
+
+  version "3.10"
+  sha256 arm:   "8902f55f4171b506eaf74757e73dcb33d4a7b214a14fbdd6971b65a2a3392bca",
+         intel: "82a339f664ab01161d2f389c9983e6a0fc0bdb151312900bec1079e6cf03556e"
 
   # The filename embeds an opaque build id (timestamp + git hash); update it on version bumps.
-  url "https://downloads.sourceforge.net/rodin-b-sharp/Core_Rodin_Platform/#{version}/rodin-#{version}.0.202406100806-9b87fe13d-macosx.cocoa.x86_64.tar.gz",
+  url "https://downloads.sourceforge.net/rodin-b-sharp/Core_Rodin_Platform/#{version}/rodin-#{version}.0.202607010932-881664d81-macosx.cocoa.#{arch}.tar.gz",
       verified: "downloads.sourceforge.net/rodin-b-sharp/"
   name "Rodin Platform"
   desc "IDE for formal modelling and verification with Event-B"
@@ -16,7 +19,6 @@ cask "rodin" do
     end
   end
 
-  depends_on arch: :x86_64
   depends_on macos: :big_sur
 
   app "rodin.app"
