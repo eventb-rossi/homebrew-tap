@@ -39,6 +39,7 @@ one at a time.
 | `tlc4b` | [TLC4B](https://github.com/hhu-stups/tlc4b) — model-check classical B specifications by translating them to TLA+ and running TLC |
 | `b2program` | [B2Program](https://github.com/favu100/b2program) — generate Java/C++/Python/Rust/TypeScript code from high-level B |
 | `eventb-to-txt` | [eventb-to-txt](https://github.com/eventb-rossi/eventb-to-txt) — convert Rodin Event-B models (`.bum`/`.buc`) to CamilleX plain text |
+| `ltsmin` | [LTSmin](https://github.com/utwente-fmt/ltsmin) — language-independent model checking with native ETF, PNML and ProB backends |
 | `prob` | [ProB](https://prob.hhu.de/) — animator, constraint solver and model checker for B, Event-B, CSP-M, TLA+ and Z (`probcli` CLI + Tcl/Tk GUI `prob-tk`) |
 | `rossi` | [Rossi](https://github.com/eventb-rossi/rossi) — Rust toolchain for Event-B: validate, import/export Rodin archives, format, static-check (`rossi` CLI) and a language server (`rossi lsp` or the bundled `eventb-language-server`) |
 
@@ -49,6 +50,7 @@ brew install evbt
 brew install tlc4b
 brew install b2program
 brew install eventb-to-txt
+brew install ltsmin
 brew install prob
 brew install rossi
 ```
@@ -72,6 +74,20 @@ brew install rossi
   (`cspmf`) is Intel-only, so CSP-M (`.csp`) inputs need Rosetta 2 on Apple Silicon
   (`softwareupdate --install-rosetta`). Graph visualisation (e.g. `probcli`'s `-dot`
   output) additionally needs Graphviz: `brew install graphviz`.
+
+- **LTSmin** (`ltsmin`) is built from source for Intel and Apple Silicon. The
+  formula provides ETF, PNML and ProB sequential/symbolic backends; SpinS,
+  MPI/distributed, Spot/BuDDy, Sylvan and legacy mCRL adapters are omitted.
+  Multicore backends are Intel-only because LTSmin 3.0.2 assumes x86 memory
+  ordering. ProB remains optional and can use the formula explicitly:
+
+  ```sh
+  probcli MODEL -mc_with_lts_seq -nodead -p LTSMIN "$(brew --prefix ltsmin)/bin"
+  ```
+
+  The sequential command above checks invariants. The native 64-bit ListDD
+  symbolic backend also supports deadlock and invariant checking; Sylvan's
+  parallel symbolic backends are omitted.
 
 - Rodin, Atelier B and the **Intel** ProB2-UI build are **not notarized** by Apple (the
   Apple Silicon ProB2-UI build is notarized). If Gatekeeper blocks an app from opening,
