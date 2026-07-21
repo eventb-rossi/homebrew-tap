@@ -23,22 +23,22 @@ class Rossi < Formula
   # bump-rossi job updates the four `tag:`, url, and sha256 values together.
   on_macos do
     on_arm do
-      url "https://github.com/eventb-rossi/rossi/releases/download/v0.1.5/rossi-aarch64-apple-darwin.tar.gz", tag: "0.1.5"
-      sha256 "5a1b1a06723b14fda95cc098015d6688fec09cf4c802afc96104d27ce83a6e2d"
+      url "https://github.com/eventb-rossi/rossi/releases/download/v0.1.6/rossi-aarch64-apple-darwin.tar.gz", tag: "0.1.6"
+      sha256 "ab0907363b8caded859ae2fee917550f35e15c2b022eb6af8a7c2c330656e4fa"
     end
     on_intel do
-      url "https://github.com/eventb-rossi/rossi/releases/download/v0.1.5/rossi-x86_64-apple-darwin.tar.gz", tag: "0.1.5"
-      sha256 "74985c5ba7ed4a6c6a5e6a4867378be2ae4587f0dc8ab658f626b5084a4e06fe"
+      url "https://github.com/eventb-rossi/rossi/releases/download/v0.1.6/rossi-x86_64-apple-darwin.tar.gz", tag: "0.1.6"
+      sha256 "b0b5409b5a5f6a8673381b078ee935b2d8fe3e2b36c7d654942865c3ec4cc73d"
     end
   end
   on_linux do
     on_arm do
-      url "https://github.com/eventb-rossi/rossi/releases/download/v0.1.5/rossi-aarch64-unknown-linux-gnu.tar.gz", tag: "0.1.5"
-      sha256 "fbf4723743daf00e9f8026619d719d09235a1f70a087f47ff383c0ac40029b2d"
+      url "https://github.com/eventb-rossi/rossi/releases/download/v0.1.6/rossi-aarch64-unknown-linux-gnu.tar.gz", tag: "0.1.6"
+      sha256 "273f2a9e95d064b53d61ad99fa0c51a233ee08ed8be3c622641d770858c1fa1b"
     end
     on_intel do
-      url "https://github.com/eventb-rossi/rossi/releases/download/v0.1.5/rossi-x86_64-unknown-linux-gnu.tar.gz", tag: "0.1.5"
-      sha256 "9b6af7a37464039b2035a4e7b2a73469ab9ddc1131e05fc6eb2bbc7e8fa29d95"
+      url "https://github.com/eventb-rossi/rossi/releases/download/v0.1.6/rossi-x86_64-unknown-linux-gnu.tar.gz", tag: "0.1.6"
+      sha256 "47e9784ff91bce725b9c8a01dc62873d13de248a2edacc04b7e0bea574ccf1dd"
     end
   end
 
