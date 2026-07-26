@@ -1,8 +1,8 @@
 class EventbAnimate < Formula
   desc "Animate Event-B models with the ProB model checker, no Rodin required"
   homepage "https://github.com/eventb-rossi/eventb-animate"
-  url "https://github.com/eventb-rossi/eventb-animate/archive/refs/tags/v6.2.tar.gz"
-  sha256 "c1df5f29623f8dccdeacb3b6954ca26a2b2f307ca2bae0f89c691feb2ef121ce"
+  url "https://github.com/eventb-rossi/eventb-animate/archive/refs/tags/v6.3.tar.gz"
+  sha256 "111534df2fa049db712c0b6251576468f909b382db6ef9a513c6f9b69aa2c690"
   license "Apache-2.0"
 
   livecheck do
