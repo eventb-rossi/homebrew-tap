@@ -3,8 +3,8 @@ class Prob < Formula
   homepage "https://prob.hhu.de/"
   # ProB ships a prebuilt Tcl/Tk distribution (a SICStus Prolog image plus launchers);
   # the macOS archive is a universal binary, so a single download serves both arches.
-  url "https://stups.hhu-hosting.de/downloads/prob/tcltk/releases/1.16.0/ProB.macos.zip"
-  sha256 "88e45bfb59f312d15d2ed6e79881c10023bd59682fa582cdaed432ecb0bfa684"
+  url "https://stups.hhu-hosting.de/downloads/prob/tcltk/releases/1.16.1/ProB.macos.zip"
+  sha256 "93cb8e8581ac15b327800d423c6588b134b589e87ea34abc51d6d00a7b8cedc3"
   license "EPL-1.0"
 
   livecheck do
