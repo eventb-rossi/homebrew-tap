@@ -7,8 +7,7 @@ cask "prob2-ui" do
 
   # Apple Silicon ships a notarized .zip; Intel ships an unsigned .dmg, so both the
   # extension and the filename suffix differ per architecture.
-  url "https://stups.hhu-hosting.de/downloads/prob2/#{version}/ProB2-UI-#{arch}-#{version}#{on_arch_conditional arm: "-notarized.zip", intel: ".dmg"}",
-      verified: "stups.hhu-hosting.de/downloads/prob2/"
+  url "https://stups.hhu-hosting.de/downloads/prob2/#{version}/ProB2-UI-#{arch}-#{version}#{on_arch_conditional arm: "-notarized.zip", intel: ".dmg"}"
   name "ProB2-UI"
   desc "JavaFX interface for the ProB animator, constraint solver and model checker"
   homepage "https://prob.hhu.de/w/index.php/ProB2-UI"

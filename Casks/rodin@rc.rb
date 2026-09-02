@@ -6,8 +6,7 @@ cask "rodin@rc" do
          intel: "57f7d8585e95b60f13140ae1ab50cf6d591a750696fbee8ef3f470135aaedc31"
 
   # The filename embeds an opaque build id (timestamp + git hash); update it on version bumps.
-  url "https://downloads.sourceforge.net/rodin-b-sharp/Core_Rodin_Platform/#{version}/rodin-3.10.0.202605210654-RC2-881664d81-macosx.cocoa.#{arch}.tar.gz",
-      verified: "downloads.sourceforge.net/rodin-b-sharp/"
+  url "https://downloads.sourceforge.net/rodin-b-sharp/Core_Rodin_Platform/#{version}/rodin-3.10.0.202605210654-RC2-881664d81-macosx.cocoa.#{arch}.tar.gz"
   name "Rodin Platform"
   desc "IDE for formal modelling and verification with Event-B"
   homepage "https://wiki.event-b.org/"
