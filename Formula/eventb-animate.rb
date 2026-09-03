@@ -1,8 +1,10 @@
 class EventbAnimate < Formula
   desc "Animate Event-B models with the ProB model checker, no Rodin required"
   homepage "https://github.com/eventb-rossi/eventb-animate"
-  url "https://github.com/eventb-rossi/eventb-animate/archive/refs/tags/v6.6.tar.gz"
-  sha256 "9adcedef243a390b98b68ce48ec837da1e55e0630222a32e408e3fb218460584"
+  # Upstream's release asset is the fat jar from `./gradlew shadowJar`; installing
+  # it directly avoids a Gradle build and the JDK 21 it would need.
+  url "https://github.com/eventb-rossi/eventb-animate/releases/download/v6.6/eventb-animate-6.6.jar"
+  sha256 "52428e45e0a8dc4e5f558a0b9d22feb56ade2ca7abbf8a7788510ed5b4be7cf5"
   license "Apache-2.0"
 
   livecheck do
@@ -10,17 +12,10 @@ class EventbAnimate < Formula
     strategy :github_releases
   end
 
-  # The Gradle toolchain targets Java 21 with auto-download disabled, so a JDK 21
-  # must be present to build; the resulting fat jar runs on any modern JDK.
-  depends_on "openjdk@21" => :build
   depends_on "openjdk"
 
   def install
-    ENV["JAVA_HOME"] = formula_opt_prefix("openjdk@21")
-    ENV["GRADLE_USER_HOME"] = buildpath/".gradle"
-    system "./gradlew", "--no-daemon", "shadowJar", "-x", "test"
-
-    libexec.install "build/libs/eventb-animate-#{version}.jar" => "eventb-animate.jar"
+    libexec.install "eventb-animate-#{version}.jar" => "eventb-animate.jar"
     # Pin Homebrew's openjdk so the tool runs regardless of the user's JAVA_HOME.
     # --sun-misc-unsafe-memory-access=allow silences the sun.misc.Unsafe deprecation
     # warnings emitted by the bundled Guice on JDK 24+.
@@ -33,8 +28,8 @@ class EventbAnimate < Formula
 
   test do
     assert_match "eventb-animate #{version}", shell_output("#{bin}/eventb-animate --version")
-    # Animating a model would make the ProB kernel download probcli at runtime, so
-    # the test stays offline and only exercises the CLI surface.
-    assert_match "--steps", shell_output("#{bin}/eventb-animate --help")
+    # Model-checking would make the ProB kernel download probcli at runtime, so the
+    # test stays offline and only exercises the CLI surface.
+    assert_match "Usage: eventb-animate", shell_output("#{bin}/eventb-animate --help")
   end
 end

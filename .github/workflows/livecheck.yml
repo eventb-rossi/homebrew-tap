@@ -53,9 +53,11 @@ jobs:
             # formula whose urls are all nested in on_os/on_arch blocks (rossi's
             # per-arch prebuilt binaries) makes it die with "Could not find 'url'
             # stanza!" and fails the whole job. Skip such formulae by that very
-            # property — so any future prebuilt-binary formula is excluded
+            # property — so any future formula with per-arch urls is excluded
             # automatically — and let the dedicated bump-rossi job below handle
-            # them instead.
+            # them instead. Prebuilt artifacts as such are no problem: evbt, prob,
+            # eventb-animate and eventb-checker all ship one behind a top-level url
+            # and are bumped by this job.
             grep -qE '^  url "' "$f" || continue
             printf 'eventb-rossi/tap/%s ' "$(basename "$f" .rb)"
           done)

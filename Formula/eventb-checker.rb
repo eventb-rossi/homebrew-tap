@@ -1,8 +1,10 @@
 class EventbChecker < Formula
   desc "Standalone validator for Event-B models, no Rodin installation required"
   homepage "https://github.com/eventb-rossi/eventb-checker"
-  url "https://github.com/eventb-rossi/eventb-checker/archive/refs/tags/v1.13.tar.gz"
-  sha256 "8a1b0609c9fae2144b975dc35244709db0e564c6f278b078b7e9571d126d0043"
+  # Upstream's release asset is the fat jar from `./gradlew shadowJar`; installing
+  # it directly avoids a Gradle build and the JDK 21 it would need.
+  url "https://github.com/eventb-rossi/eventb-checker/releases/download/v1.13/eventb-checker-1.13-all.jar"
+  sha256 "c99c8303e63f51cd7f8083b5ddd0f1e72120a77cbf11ff57097ec4493e23e5fa"
   license "MIT"
 
   livecheck do
@@ -10,17 +12,10 @@ class EventbChecker < Formula
     strategy :github_releases
   end
 
-  # The Gradle toolchain targets Java 21 with auto-download disabled upstream, so a
-  # JDK 21 must be present to build; the resulting fat jar runs on any modern JDK.
-  depends_on "openjdk@21" => :build
   depends_on "openjdk"
 
   def install
-    ENV["JAVA_HOME"] = formula_opt_prefix("openjdk@21")
-    ENV["GRADLE_USER_HOME"] = buildpath/".gradle"
-    system "./gradlew", "--no-daemon", "shadowJar", "-x", "test"
-
-    libexec.install "build/libs/eventb-checker-#{version}-all.jar" => "eventb-checker.jar"
+    libexec.install "eventb-checker-#{version}-all.jar" => "eventb-checker.jar"
     # Pin Homebrew's openjdk so the tool runs regardless of the user's JAVA_HOME.
     # --enable-native-access silences the JNA native-access warnings emitted by the
     # bundled Rodin AST libraries (and pre-empts their hard removal in a future JDK).
@@ -35,7 +30,7 @@ class EventbChecker < Formula
     assert_match "eventb-checker #{version}", shell_output("#{bin}/eventb-checker --version")
 
     # A minimal, fully valid Event-B machine in Camille notation: one variable, one
-    # invariant, and an INITIALISATION that establishes it. Must report VALID.
+    # invariant, and an INITIALISATION that establishes it. `check` must report VALID.
     (testpath/"Counter.eventb").write <<~EOS
       machine Counter
       variables n
@@ -48,6 +43,6 @@ class EventbChecker < Formula
         end
       end
     EOS
-    assert_match "RESULT: VALID", shell_output("#{bin}/eventb-checker #{testpath}/Counter.eventb")
+    assert_match "RESULT: VALID", shell_output("#{bin}/eventb-checker check #{testpath}/Counter.eventb")
   end
 end
