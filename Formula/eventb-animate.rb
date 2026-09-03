@@ -3,8 +3,8 @@ class EventbAnimate < Formula
   homepage "https://github.com/eventb-rossi/eventb-animate"
   # Upstream's release asset is the fat jar from `./gradlew shadowJar`; installing
   # it directly avoids a Gradle build and the JDK 21 it would need.
-  url "https://github.com/eventb-rossi/eventb-animate/releases/download/v6.6/eventb-animate-6.6.jar"
-  sha256 "52428e45e0a8dc4e5f558a0b9d22feb56ade2ca7abbf8a7788510ed5b4be7cf5"
+  url "https://github.com/eventb-rossi/eventb-animate/releases/download/v7.0/eventb-animate-7.0.jar"
+  sha256 "50f245abc4cc156f88670caa09104007d361f26c0b76e3f1f1b949f85e7e2440"
   license "Apache-2.0"
 
   livecheck do
