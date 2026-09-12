@@ -22,12 +22,12 @@ cask "rodin" do
 
   app "rodin.app"
 
-  postflight do
-    ini = "#{appdir}/rodin.app/Contents/Eclipse/rodin.ini"
-    contents = File.read(ini)
-    unless contents.include?("org.eclipse.e4.ui.css.swt.theme")
-      File.open(ini, "a") { |f| f.puts "-Dorg.eclipse.e4.ui.css.swt.theme=org.eclipse.e4.ui.css.theme.e4_default" }
-    end
+  postflight_steps do
+    inreplace "rodin.app/Contents/Eclipse/rodin.ini",
+              /\A(?!.*org\.eclipse\.e4\.ui\.css\.swt\.theme).*\z/m,
+              "\\0-Dorg.eclipse.e4.ui.css.swt.theme=org.eclipse.e4.ui.css.theme.e4_default\n",
+              base:         :appdir,
+              audit_result: false
 
     # The e4 CSS theme above only pins the Eclipse-drawn widgets. On a dark-mode
     # Mac, SWT also picks its dark theme and flips the native Cocoa controls dark
@@ -39,9 +39,9 @@ cask "rodin" do
     # GTK_THEME=Adwaita:light on Linux, scoped to Rodin's bundle id only.
     # (NSRequiresAquaSystemAppearance is ignored on modern macOS, so it cannot be
     # used for this.)
-    system_command "/usr/bin/defaults",
-                   args: ["write", "org.rodinp.platform.product",
-                          "AppleInterfaceStyle", "-string", "Light"]
+    run "/usr/bin/defaults",
+        args: ["write", "org.rodinp.platform.product",
+               "AppleInterfaceStyle", "-string", "Light"]
   end
 
   zap trash: [
