@@ -16,7 +16,7 @@ class Ltsmin < Formula
   depends_on "prob" => :test
   depends_on "czmq"
   depends_on "gmp"
-  depends_on macos: :big_sur
+  depends_on :macos
   depends_on "popt"
 
   uses_from_macos "libxml2"

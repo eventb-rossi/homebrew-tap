@@ -14,7 +14,7 @@ class Prob < Formula
     regex(%r{href=["']?(\d+(?:\.\d+)+)/}i)
   end
 
-  depends_on macos: :big_sur
+  depends_on :macos
   depends_on "openjdk" # Java-backed features (-check_java_version, KodKod, ProB2 bridge)
   depends_on "tcl-tk@8" # libtcl8.6 the SICStus image loads for the Tcl/Tk GUI
 

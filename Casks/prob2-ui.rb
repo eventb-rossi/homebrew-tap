@@ -19,7 +19,7 @@ cask "prob2-ui" do
     regex(%r{href=["']?(\d+(?:\.\d+)+)/}i)
   end
 
-  depends_on macos: :big_sur
+  depends_on :macos
 
   app "ProB2-UI.app"
 

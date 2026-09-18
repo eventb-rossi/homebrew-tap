@@ -19,7 +19,7 @@ cask "rodin@rc" do
   end
 
   conflicts_with cask: "rodin"
-  depends_on macos: :big_sur
+  depends_on :macos
 
   app "rodin.app"
 
