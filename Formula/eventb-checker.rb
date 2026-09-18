@@ -3,8 +3,8 @@ class EventbChecker < Formula
   homepage "https://github.com/eventb-rossi/eventb-checker"
   # Upstream's release asset is the fat jar from `./gradlew shadowJar`; installing
   # it directly avoids a Gradle build and the JDK 21 it would need.
-  url "https://github.com/eventb-rossi/eventb-checker/releases/download/v1.13/eventb-checker-1.13-all.jar"
-  sha256 "c99c8303e63f51cd7f8083b5ddd0f1e72120a77cbf11ff57097ec4493e23e5fa"
+  url "https://github.com/eventb-rossi/eventb-checker/releases/download/v1.14/eventb-checker-1.14-all.jar"
+  sha256 "4555a56814268017d4de2235738189669ad3b5439dec00e78184182b33b9ac33"
   license "MIT"
 
   livecheck do
