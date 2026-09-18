@@ -1,8 +1,8 @@
 class RodinHeadless < Formula
   desc "Headless toolchain to build, model-check, and prove Rodin Event-B models"
   homepage "https://github.com/eventb-rossi/rodin-headless"
-  url "https://github.com/eventb-rossi/rodin-headless/archive/refs/tags/v4.0.tar.gz"
-  sha256 "cbc19398518ceefc0153ebe66a4caf6ba33e2d767f93a7aa5739282d84abddab"
+  url "https://github.com/eventb-rossi/rodin-headless/archive/refs/tags/v5.0.tar.gz"
+  sha256 "1ee3fd2d1557b68953c705c6ebe5e134115499dc7880308e4425b5e101d95986"
   license "MIT"
 
   livecheck do
