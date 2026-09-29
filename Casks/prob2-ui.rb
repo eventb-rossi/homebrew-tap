@@ -1,13 +1,11 @@
 cask "prob2-ui" do
   arch arm: "aarch64", intel: "x86_64"
 
-  version "1.3.1"
-  sha256 arm:   "0f7f212d40ee86ed387ec0f5e315b0a15aae7b573bc413ce15e04c09acf41f10",
-         intel: "29fe8acecfc008266f14ca8c81c70d5c215d7d7b3ca0725f51dd8013567470b2"
+  version "1.4.0"
+  sha256 arm:   "95c0de2fdaaeb27db6def70cda48a228b99c380b261e5a9bc9c2125c6277d878",
+         intel: "22a57411e22f7abf7c83fe86186fcfd655593e586b53633f9f6378ae342a96ad"
 
-  # Apple Silicon ships a notarized .zip; Intel ships an unsigned .dmg, so both the
-  # extension and the filename suffix differ per architecture.
-  url "https://stups.hhu-hosting.de/downloads/prob2/#{version}/ProB2-UI-#{arch}-#{version}#{on_arch_conditional arm: "-notarized.zip", intel: ".dmg"}"
+  url "https://stups.hhu-hosting.de/downloads/prob2/#{version}/ProB2-UI-#{arch}-#{version}.dmg"
   name "ProB2-UI"
   desc "JavaFX interface for the ProB animator, constraint solver and model checker"
   homepage "https://prob.hhu.de/w/index.php/ProB2-UI"
@@ -33,9 +31,8 @@ cask "prob2-ui" do
     On first launch you may need to open ProB2-UI twice before it starts
     properly. This should only happen once.
 
-    The Intel (x86_64) build is not signed or notarized by Apple (the Apple
-    Silicon build is). If macOS Gatekeeper blocks ProB2-UI from opening or
-    reports it as damaged, run:
+    ProB2-UI is not notarized by Apple. If macOS Gatekeeper blocks it from
+    opening or reports it as damaged, run:
       xattr -dr com.apple.quarantine "#{appdir}/ProB2-UI.app"
   EOS
 end

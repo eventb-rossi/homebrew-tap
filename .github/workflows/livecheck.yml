@@ -159,9 +159,105 @@ jobs:
           gh pr merge --auto --squash "$url" \
             || echo "::warning::Could not enable auto-merge; merge $url manually."
 
-  # Casks embed opaque build ids in their download URLs (timestamp + git hash), so
-  # they can't be auto-bumped — file a tracking issue per new release instead.
+  # ProB2-UI uses version-derived DMG names for both architectures. Homebrew's
+  # bump-cask-pr only refreshes the current architecture's checksum for its
+  # root-level sha256 map, so download and hash both artifacts ourselves.
+  bump-prob2-ui:
+    runs-on: macos-latest
+    env:
+      HOMEBREW_GIT_NAME: github-actions[bot]
+      HOMEBREW_GIT_EMAIL: 41898282+github-actions[bot]@users.noreply.github.com
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          token: ${{ secrets.VERSION_BUMP_TOKEN }}
+      - uses: Homebrew/actions/setup-homebrew@2026.09.13.1
+        with:
+          token: ${{ secrets.VERSION_BUMP_TOKEN }}
+      - uses: ./.github/actions/setup-tap
+
+      - name: Bump ProB2-UI if both macOS DMGs are available
+        env:
+          GH_TOKEN: ${{ secrets.VERSION_BUMP_TOKEN }}
+          ISSUE_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+
+          json="$(brew livecheck eventb-rossi/tap/prob2-ui --cask --newer-only --json)"
+          [ "$(jq 'length' <<<"$json")" -eq 0 ] && { echo "prob2-ui is up to date"; exit 0; }
+          old="$(jq -r '.[0].version.current' <<<"$json")"
+          new="$(jq -r '.[0].version.latest' <<<"$json")"
+          [[ "$old" =~ ^[0-9]+(\.[0-9]+)+$ && "$new" =~ ^[0-9]+(\.[0-9]+)+$ ]]
+          branch="bump-prob2-ui-$new"
+
+          # A closed, unmerged PR needs manual review; the tracking issue below
+          # remains the fallback. Do not silently reopen the same bump.
+          if [ "$(gh pr list --head "$branch" --state all --json number --jq 'length')" -ne 0 ]; then
+            echo "PR for $branch already exists"; exit 0
+          fi
+
+          # A notarized Apple Silicon ZIP would be preferable to the unsigned
+          # DMG and needs a manual cask review rather than this DMG-only bump.
+          listing="$(curl -fsSL "https://stups.hhu-hosting.de/downloads/prob2/${new}/")"
+          if grep -Fq "ProB2-UI-aarch64-${new}-notarized.zip" <<<"$listing"; then
+            echo "Notarized Apple Silicon ZIP found; leaving this release for manual review" >&2
+            exit 1
+          fi
+
+          for arch in aarch64 x86_64; do
+            file="$RUNNER_TEMP/ProB2-UI-${arch}-${new}.dmg"
+            url="https://stups.hhu-hosting.de/downloads/prob2/${new}/ProB2-UI-${arch}-${new}.dmg"
+            curl -fsSL --retry 3 "$url" -o "$file"
+            hdiutil verify "$file" > /dev/null
+          done
+          arm_sha="$(shasum -a 256 "$RUNNER_TEMP/ProB2-UI-aarch64-${new}.dmg" | cut -d' ' -f1)"
+          intel_sha="$(shasum -a 256 "$RUNNER_TEMP/ProB2-UI-x86_64-${new}.dmg" | cut -d' ' -f1)"
+
+          f=Casks/prob2-ui.rb
+          ruby - "$f" "$old" "$new" "$arm_sha" "$intel_sha" <<'RUBY'
+          path, old, latest, arm, intel = ARGV
+          contents = File.read(path)
+          {
+            /^  version "#{Regexp.escape(old)}"$/ => "  version \"#{latest}\"",
+            /^  sha256 arm:\s+"[0-9a-f]{64}",$/ => "  sha256 arm:   \"#{arm}\",",
+            /^         intel:\s+"[0-9a-f]{64}"$/ => "         intel: \"#{intel}\"",
+          }.each do |pattern, replacement|
+            raise "Expected exactly one #{pattern} in #{path}" unless contents.scan(pattern).length == 1
+
+            contents.sub!(pattern, replacement)
+          end
+          File.write(path, contents)
+          RUBY
+
+          git diff --check
+          brew style "$f"
+          brew audit --cask eventb-rossi/tap/prob2-ui
+
+          git config user.name "$HOMEBREW_GIT_NAME"
+          git config user.email "$HOMEBREW_GIT_EMAIL"
+          git switch -c "$branch"
+          git add "$f"
+          git commit -m "prob2-ui $new"
+          # No PR references this branch (guarded above). Replace an orphan
+          # branch left by a run that pushed but failed before opening its PR.
+          git push -u --force origin "$branch"
+
+          body="Automated bump of prob2-ui from $old to $new. Both macOS DMGs were downloaded, verified, and hashed; brew style and audit passed."
+          issue="$(GH_TOKEN="$ISSUE_TOKEN" gh issue list --label livecheck --state open --limit 200 --json number,title |
+            jq -r --arg title "prob2-ui: $old → $new" '[.[] | select(.title == $title) | .number] | first // empty')"
+          if [ -n "$issue" ]; then
+            body="$body
+
+          Closes #$issue"
+          fi
+          gh pr create --base main --head "$branch" --title "prob2-ui $new" --body "$body"
+
+  # Rodin's URLs have opaque build ids and Atelier B's upload paths vary by
+  # release. Track those casks manually. ProB2-UI also gets a tracking issue if
+  # its automatic bump cannot open a PR (for example, a DMG is missing).
   track-casks:
+    needs: bump-prob2-ui
+    if: ${{ always() }}
     runs-on: macos-latest        # Linux Homebrew cannot livecheck casks
     steps:
       - uses: actions/checkout@v7
@@ -196,6 +292,12 @@ jobs:
           while IFS=$'\t' read -r name current latest; do
             title="${name}: ${current} → ${latest}"
 
+            if [ "$name" = "prob2-ui" ] &&
+               [ "$(gh pr list --head "bump-prob2-ui-$latest" --state open --json number --jq 'length')" -ne 0 ]; then
+              echo "Already has an open bump PR: $name $latest"
+              continue
+            fi
+
             if jq -e --arg t "$title" 'any(.[]; .title == $t)' <<<"$existing" >/dev/null; then
               echo "Already tracked: $title"
               continue
@@ -212,9 +314,8 @@ jobs:
           Update checklist for \`Casks/${name}.rb\`:
 
           - [ ] Bump \`version\` to \`${latest}\`
-          - [ ] Refresh the download URL — the filename embeds an opaque build id
-                (timestamp + git hash) that is **not** derivable from the version, so copy
-                the exact name from the upstream listing
+          - [ ] Verify the macOS artifacts in the upstream listing and update
+                the download URL if needed
           - [ ] Recompute \`sha256\` (per-arch where the cask is multi-arch)
           - [ ] \`brew style Casks/${name}.rb && brew audit --cask eventb-rossi/tap/${name}\`
 
