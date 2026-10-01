@@ -35,7 +35,7 @@ jobs:
       # homebrew/actions@master"). Dependabot's github-actions group keeps a tag
       # pin current (see .github/dependabot.yml); it cannot track branch refs,
       # which is exactly why the drift went unnoticed.
-      - uses: Homebrew/actions/setup-homebrew@2026.09.13.1
+      - uses: Homebrew/actions/setup-homebrew@2026.09.28.1
         with:
           # bump-formula-pr runs `brew audit`, which must resolve the formulae's
           # homebrew/core dependencies (openjdk*). The Linux runner has no core
@@ -70,7 +70,7 @@ jobs:
           echo "list=${names% }" >> "$GITHUB_OUTPUT"
 
       - name: Open PRs for outdated formulae
-        uses: Homebrew/actions/bump-packages@2026.09.13.1
+        uses: Homebrew/actions/bump-packages@2026.09.28.1
         with:
           # Default GITHUB_TOKEN can't push branches / open PRs that re-trigger CI,
           # and brew bump needs write access. Uses the org secret VERSION_BUMP_TOKEN
@@ -97,7 +97,7 @@ jobs:
           # Push the bump branch + open a PR that re-triggers CI (the default
           # GITHUB_TOKEN can't), so auto-merge can gate on the ci.yml checks.
           token: ${{ secrets.VERSION_BUMP_TOKEN }}
-      - uses: Homebrew/actions/setup-homebrew@2026.09.13.1
+      - uses: Homebrew/actions/setup-homebrew@2026.09.28.1
         with:
           # actions/checkout@v7 no longer persists the token inline in
           # .git/config (it moved to an includeIf-referenced file under
@@ -171,7 +171,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           token: ${{ secrets.VERSION_BUMP_TOKEN }}
-      - uses: Homebrew/actions/setup-homebrew@2026.09.13.1
+      - uses: Homebrew/actions/setup-homebrew@2026.09.28.1
         with:
           token: ${{ secrets.VERSION_BUMP_TOKEN }}
       - uses: ./.github/actions/setup-tap
@@ -261,7 +261,7 @@ jobs:
     runs-on: macos-latest        # Linux Homebrew cannot livecheck casks
     steps:
       - uses: actions/checkout@v7
-      - uses: Homebrew/actions/setup-homebrew@2026.09.13.1
+      - uses: Homebrew/actions/setup-homebrew@2026.09.28.1
       - uses: ./.github/actions/setup-tap
 
       - name: File issues for outdated casks
