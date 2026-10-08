@@ -18,9 +18,43 @@ permissions:
   issues: write
 
 jobs:
+  # Partition the tap's formulae between the two bump jobs below, from the tap
+  # contents instead of a hand-maintained list (a hardcoded one silently dropped
+  # formulae before — see ci.yml). brew bump-formula-pr can only rewrite a
+  # TOP-LEVEL url stanza: a formula whose urls are all nested in on_os/on_arch
+  # blocks (per-platform prebuilt artifacts) makes it die with "Could not find
+  # 'url' stanza!" and fails the whole job. So split on that very property —
+  # any future formula with per-platform urls is routed automatically — and
+  # give those formulae to the dedicated bump-per-os job instead.
+  list-formulae:
+    runs-on: ubuntu-latest
+    outputs:
+      top-level: ${{ steps.list.outputs.top-level }}
+      per-os: ${{ steps.list.outputs.per-os }}
+    steps:
+      - uses: actions/checkout@v7
+      # bump-packages expects the names space-separated on ONE line: it parses
+      # the input with `read -a`, which stops at the first newline, so a YAML
+      # block list silently checked only the first formula. The matrix in
+      # bump-per-os needs a JSON array instead.
+      - id: list
+        run: |
+          top=() per_os=()
+          for f in Formula/*.rb; do
+            name="$(basename "$f" .rb)"
+            if grep -qE '^  url "' "$f"; then
+              top+=("eventb-rossi/tap/$name")
+            else
+              per_os+=("$name")
+            fi
+          done
+          echo "top-level=${top[*]}" >> "$GITHUB_OUTPUT"
+          echo "per-os=$(jq -cn '$ARGS.positional' --args "${per_os[@]}")" >> "$GITHUB_OUTPUT"
+
   # GitHub-sourced formulae have version-derivable URLs, so the version + sha256
   # bump is mechanical: open update PRs via Homebrew's official action.
   bump-formulae:
+    needs: list-formulae
     runs-on: ubuntu-latest
     # brew bump-formula-pr commits the version bump; brew takes the git
     # author/committer identity from these (the runner has none configured).
@@ -44,31 +78,8 @@ jobs:
           core: true
       - uses: ./.github/actions/setup-tap
 
-      # Build the formula list from the tap contents instead of a hand-maintained
-      # list (a hardcoded one silently dropped formulae before — see ci.yml).
-      # bump-packages expects the names space-separated on ONE line: it parses the
-      # input with `read -a`, which stops at the first newline, so a YAML block
-      # list silently checked only the first formula. b2program needs no
-      # exclusion: its livecheck is `skip`-ed upstream and `brew bump` skips it
-      # gracefully.
-      - name: List formulae
-        id: formulae
-        run: |
-          names=$(for f in Formula/*.rb; do
-            # brew bump-formula-pr can only rewrite a TOP-LEVEL url stanza, so a
-            # formula whose urls are all nested in on_os/on_arch blocks (rossi's
-            # per-arch prebuilt binaries) makes it die with "Could not find 'url'
-            # stanza!" and fails the whole job. Skip such formulae by that very
-            # property — so any future formula with per-arch urls is excluded
-            # automatically — and let the dedicated bump-rossi job below handle
-            # them instead. Prebuilt artifacts as such are no problem: evbt, prob,
-            # eventb-animate and eventb-checker all ship one behind a top-level url
-            # and are bumped by this job.
-            grep -qE '^  url "' "$f" || continue
-            printf 'eventb-rossi/tap/%s ' "$(basename "$f" .rb)"
-          done)
-          echo "list=${names% }" >> "$GITHUB_OUTPUT"
-
+      # b2program needs no exclusion: its livecheck is `skip`-ed upstream and
+      # `brew bump` skips it gracefully.
       - name: Open PRs for outdated formulae
         uses: Homebrew/actions/bump-packages@2026.09.28.1
         with:
@@ -78,14 +89,18 @@ jobs:
           # eventb-rossi packaging repos.
           token: ${{ secrets.VERSION_BUMP_TOKEN }}
           fork: false            # we own the tap; push the bump branch directly
-          formulae: ${{ steps.formulae.outputs.list }}
+          formulae: ${{ needs.list-formulae.outputs.top-level }}
 
-  # rossi ships per-arch prebuilt binaries (4 url/sha256 pairs in on_os/on_arch
-  # blocks), which brew bump-formula-pr can't rewrite ("Could not find 'url'
-  # stanza!" — it only edits a top-level url stanza). Bump it ourselves: detect
-  # via livecheck, recompute the four sha256s from the release assets, rewrite the
-  # formula, and open an auto-merge PR.
-  bump-rossi:
+  # The formulae with per-platform urls, which bump-formulae can't handle: bump
+  # them ourselves. Detect via livecheck, rewrite the version in every url,
+  # recompute each sha256 from the release assets, and open an auto-merge PR.
+  bump-per-os:
+    needs: list-formulae
+    if: ${{ needs.list-formulae.outputs.per-os != '[]' }}
+    strategy:
+      fail-fast: false     # one formula's broken release must not block the others
+      matrix:
+        formula: ${{ fromJSON(needs.list-formulae.outputs.per-os) }}
     runs-on: ubuntu-latest
     # Used as the git author/committer for the bump commit (the runner has none).
     env:
@@ -107,33 +122,38 @@ jobs:
           token: ${{ secrets.VERSION_BUMP_TOKEN }}
       - uses: ./.github/actions/setup-tap
 
-      - name: Bump rossi if a newer release exists
+      - name: Bump ${{ matrix.formula }} if a newer release exists
         env:
           GH_TOKEN: ${{ secrets.VERSION_BUMP_TOKEN }}
+          NAME: ${{ matrix.formula }}
         run: |
           set -euo pipefail
 
           # Detect with the same livecheck used for every other formula.
-          json="$(brew livecheck eventb-rossi/tap/rossi --newer-only --json)"
-          [ "$(jq 'length' <<<"$json")" -eq 0 ] && { echo "rossi is up to date"; exit 0; }
+          json="$(brew livecheck "eventb-rossi/tap/$NAME" --newer-only --json)"
+          [ "$(jq 'length' <<<"$json")" -eq 0 ] && { echo "$NAME is up to date"; exit 0; }
           old="$(jq -r '.[0].version.current' <<<"$json")"
           new="$(jq -r '.[0].version.latest'  <<<"$json")"
-          branch="bump-rossi-$new"
-          echo "Bumping rossi $old -> $new"
+          branch="bump-$NAME-$new"
+          echo "Bumping $NAME $old -> $new"
 
           # Idempotent: skip if a PR for this version was already opened.
           if [ "$(gh pr list --head "$branch" --state all --json number --jq 'length')" -ne 0 ]; then
             echo "PR for $branch already exists"; exit 0
           fi
 
-          f=Formula/rossi.rb
-          # The version appears only in the url paths and the tag: pins.
-          sed -i "s|/download/v$old/|/download/v$new/|g; s|tag: \"$old\"|tag: \"$new\"|g" "$f"
-          # Recompute every arch's sha256 from its (now version-bumped) release
-          # asset, driven by the formula's own url list — so adding or dropping a
-          # platform needs no change here. Downloading also confirms each asset
-          # exists, and we hash exactly the urls the formula will ship.
-          for u in $(grep -oE 'https://[^"]+\.tar\.gz' "$f"); do
+          f="Formula/$NAME.rb"
+          # The version appears only on the url lines: in the /v<version>/ path,
+          # plus the asset name or a tag: pin.
+          old_re="${old//./\\.}"
+          sed -i "\|/releases/download/v$old_re/|s|$old_re|$new|g" "$f"
+          # Recompute every platform's sha256 from its (now version-bumped)
+          # release asset, driven by the formula's own url list — so adding or
+          # dropping a platform needs no change here. A url repeated across
+          # on_arch blocks is hashed once and its every sha256 updated. Downloading
+          # also confirms each asset exists, and we hash exactly the urls the
+          # formula will ship.
+          for u in $(grep -oE 'https://[^"]+/releases/download/[^"]+' "$f" | sort -u); do
             sum="$(curl -fsSL "$u" | sha256sum | cut -d' ' -f1)"
             awk -v a="$u" -v s="$sum" '
               index($0, a) { hit=1 }
@@ -143,17 +163,17 @@ jobs:
 
           # Gate the bump on the same checks ci.yml runs.
           brew style "$f"
-          brew audit --formula eventb-rossi/tap/rossi
+          brew audit --formula "eventb-rossi/tap/$NAME"
 
           git config user.name  "$HOMEBREW_GIT_NAME"
           git config user.email "$HOMEBREW_GIT_EMAIL"
           git switch -c "$branch"
-          git commit -am "rossi $new"
+          git commit -am "$NAME $new"
           # Force-push is safe: the guard above guarantees no PR references this
           # branch, so any existing remote branch is an orphan from a failed run.
           git push -u --force origin "$branch"
-          url="$(gh pr create --base main --head "$branch" --title "rossi $new" \
-            --body "Automated bump of \`rossi\` $old → $new. Per-arch sha256 values recomputed from the v$new release assets. \`brew bump-formula-pr\` can't rewrite rossi's on_os/on_arch urls, so the release tracker bumps it with this dedicated job.")"
+          url="$(gh pr create --base main --head "$branch" --title "$NAME $new" \
+            --body "Automated bump of \`$NAME\` $old → $new. Per-platform sha256 values recomputed from the v$new release assets. \`brew bump-formula-pr\` can't rewrite $NAME's on_os/on_arch urls, so the release tracker bumps it with this dedicated job.")"
           # Non-fatal: if "Allow auto-merge"/required checks aren't configured the
           # PR is still opened for manual merge (and the guard above skips re-runs).
           gh pr merge --auto --squash "$url" \

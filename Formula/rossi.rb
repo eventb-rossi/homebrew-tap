@@ -20,7 +20,7 @@ class Rossi < Formula
   # `brew audit` as redundant with the version in the `/v<version>/` URL path.
   # `brew bump-formula-pr` can't rewrite these per-arch urls (they live in
   # on_os/on_arch blocks, not a top-level url stanza), so the release tracker's
-  # bump-rossi job updates the four `tag:`, url, and sha256 values together.
+  # bump-per-os job updates the four `tag:`, url, and sha256 values together.
   on_macos do
     on_arm do
       url "https://github.com/eventb-rossi/rossi/releases/download/v0.2.3/rossi-aarch64-apple-darwin.tar.gz", tag: "0.2.3"

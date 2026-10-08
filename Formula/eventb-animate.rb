@@ -1,10 +1,6 @@
 class EventbAnimate < Formula
   desc "Animate Event-B models with the ProB model checker, no Rodin required"
   homepage "https://github.com/eventb-rossi/eventb-animate"
-  # Upstream's release asset is the fat jar from `./gradlew shadowJar`; installing
-  # it directly avoids a Gradle build and the JDK 21 it would need.
-  url "https://github.com/eventb-rossi/eventb-animate/releases/download/v7.0/eventb-animate-7.0.jar"
-  sha256 "50f245abc4cc156f88670caa09104007d361f26c0b76e3f1f1b949f85e7e2440"
   license "Apache-2.0"
 
   livecheck do
@@ -14,8 +10,36 @@ class EventbAnimate < Formula
 
   depends_on "openjdk"
 
+  # Upstream ships per-platform fat jars from `./gradlew shadowJar -PprobPlatform=…`,
+  # each bundling only that platform's probcli; installing one directly avoids a
+  # Gradle build and the JDK 21 it would need. The jars are not arch-specific:
+  # the on_arm/on_intel split exists only because `brew style` rejects a url
+  # directly inside on_macos/on_linux. Upstream ships no ARM Linux jar, so ARM
+  # Linux gets linux64. `brew bump-formula-pr` can't rewrite these nested urls,
+  # so the release tracker's bump-per-os job updates them together.
+  on_macos do
+    on_arm do
+      url "https://github.com/eventb-rossi/eventb-animate/releases/download/v7.1/eventb-animate-7.1-macos.jar"
+      sha256 "287b2c18f658eee06627e181c68d4eddae3f4d278600a2de725e268f747c364b"
+    end
+    on_intel do
+      url "https://github.com/eventb-rossi/eventb-animate/releases/download/v7.1/eventb-animate-7.1-macos.jar"
+      sha256 "287b2c18f658eee06627e181c68d4eddae3f4d278600a2de725e268f747c364b"
+    end
+  end
+  on_linux do
+    on_arm do
+      url "https://github.com/eventb-rossi/eventb-animate/releases/download/v7.1/eventb-animate-7.1-linux64.jar"
+      sha256 "5d9859cf6fb4d03a13e65136158d3534385b0a33583fccf88232c239eb5ca992"
+    end
+    on_intel do
+      url "https://github.com/eventb-rossi/eventb-animate/releases/download/v7.1/eventb-animate-7.1-linux64.jar"
+      sha256 "5d9859cf6fb4d03a13e65136158d3534385b0a33583fccf88232c239eb5ca992"
+    end
+  end
+
   def install
-    libexec.install "eventb-animate-#{version}.jar" => "eventb-animate.jar"
+    libexec.install Dir["eventb-animate-*.jar"].first => "eventb-animate.jar"
     # Pin Homebrew's openjdk so the tool runs regardless of the user's JAVA_HOME.
     # --sun-misc-unsafe-memory-access=allow silences the sun.misc.Unsafe deprecation
     # warnings emitted by the bundled Guice on JDK 24+.
