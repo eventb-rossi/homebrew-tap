@@ -165,19 +165,9 @@ jobs:
           brew style "$f"
           brew audit --formula "eventb-rossi/tap/$NAME"
 
-          git config user.name  "$HOMEBREW_GIT_NAME"
-          git config user.email "$HOMEBREW_GIT_EMAIL"
-          git switch -c "$branch"
-          git commit -am "$NAME $new"
-          # Force-push is safe: the guard above guarantees no PR references this
-          # branch, so any existing remote branch is an orphan from a failed run.
-          git push -u --force origin "$branch"
-          url="$(gh pr create --base main --head "$branch" --title "$NAME $new" \
-            --body "Automated bump of \`$NAME\` $old → $new. Per-platform sha256 values recomputed from the v$new release assets. \`brew bump-formula-pr\` can't rewrite $NAME's on_os/on_arch urls, so the release tracker bumps it with this dedicated job.")"
-          # Non-fatal: if "Allow auto-merge"/required checks aren't configured the
-          # PR is still opened for manual merge (and the guard above skips re-runs).
-          gh pr merge --auto --squash "$url" \
-            || echo "::warning::Could not enable auto-merge; merge $url manually."
+          .github/scripts/open-bump-pr.sh --auto-merge "$branch" "$NAME $new" \
+            "Automated bump of \`$NAME\` $old → $new. Per-platform sha256 values recomputed from the v$new release assets. \`brew bump-formula-pr\` can't rewrite $NAME's on_os/on_arch urls, so the release tracker bumps it with this dedicated job." \
+            "$f"
 
   # ProB2-UI uses version-derived DMG names for both architectures. Homebrew's
   # bump-cask-pr only refreshes the current architecture's checksum for its
@@ -240,24 +230,9 @@ jobs:
           brew style "$f"
           brew audit --cask eventb-rossi/tap/prob2-ui
 
-          git config user.name "$HOMEBREW_GIT_NAME"
-          git config user.email "$HOMEBREW_GIT_EMAIL"
-          git switch -c "$branch"
-          git add "$f"
-          git commit -m "prob2-ui $new"
-          # No PR references this branch (guarded above). Replace an orphan
-          # branch left by a run that pushed but failed before opening its PR.
-          git push -u --force origin "$branch"
-
-          body="Automated bump of prob2-ui from $old to $new. Both macOS DMGs were downloaded, verified, and hashed; brew style and audit passed."
-          issue="$(GH_TOKEN="$ISSUE_TOKEN" gh issue list --label livecheck --state open --limit 200 --json number,title |
-            jq -r --arg title "prob2-ui: $old → $new" '[.[] | select(.title == $title) | .number] | first // empty')"
-          if [ -n "$issue" ]; then
-            body="$body
-
-          Closes #$issue"
-          fi
-          gh pr create --base main --head "$branch" --title "prob2-ui $new" --body "$body"
+          .github/scripts/open-bump-pr.sh --closes "prob2-ui: $old → $new" "$branch" "prob2-ui $new" \
+            "Automated bump of prob2-ui from $old to $new. Both macOS DMGs were downloaded, verified, and hashed; brew style and audit passed." \
+            "$f"
 
   # Rodin comes from eventb-rossi/Rodin-Bundle: `rodin` from the latest release,
   # `rodin@rc` from the newest release or -rcN candidate. The cask version is
@@ -268,6 +243,9 @@ jobs:
   # release's SHA256SUMS, which Rodin-Bundle computes from the assets it serves,
   # so the two ~220 MB zips need not be downloaded.
   bump-rodin:
+    # An upstream-release dispatch from another eventb-rossi tool can't have
+    # changed Rodin-Bundle; skip the two macOS legs then (the cron still runs).
+    if: ${{ github.event_name != 'repository_dispatch' || github.event.client_payload.tool == 'rodin' }}
     strategy:
       fail-fast: false     # a broken candidate must not block the stable bump
       matrix:
@@ -288,6 +266,7 @@ jobs:
       - name: Bump ${{ matrix.cask }} if a newer Rodin-Bundle release exists
         env:
           GH_TOKEN: ${{ secrets.VERSION_BUMP_TOKEN }}
+          ISSUE_TOKEN: ${{ github.token }}
           CASK: ${{ matrix.cask }}
         run: |
           set -euo pipefail
@@ -299,8 +278,9 @@ jobs:
           # <tag without v>,<qualifier>; refuse anything else rather than
           # write a version the url template cannot resolve.
           [[ "$new" =~ ^[0-9]+(\.[0-9]+)+-[0-9]{4}(\.[0-9]+)?(-rc[0-9]+)?,[0-9]+-[0-9a-f]+$ ]]
-          tag="v${new%%,*}"
-          branch="bump-$CASK-${new%%,*}"
+          ver="${new%%,*}"
+          tag="v$ver"
+          branch="bump-$CASK-$ver"
           echo "Bumping $CASK $old -> $new ($tag)"
 
           # Idempotent: skip if a PR for this version was already opened.
@@ -329,20 +309,10 @@ jobs:
           brew style "$f"
           brew audit --cask "eventb-rossi/tap/$CASK"
 
-          git config user.name  "$HOMEBREW_GIT_NAME"
-          git config user.email "$HOMEBREW_GIT_EMAIL"
-          git switch -c "$branch"
-          git add "$f"
-          git commit -m "$CASK ${new%%,*}"
-          # No PR references this branch (guarded above). Replace an orphan
-          # branch left by a run that pushed but failed before opening its PR.
-          git push -u --force origin "$branch"
-          url="$(gh pr create --base main --head "$branch" --title "$CASK ${new%%,*}" \
-            --body "Automated bump of \`$CASK\` from $old to $new (Rodin-Bundle [$tag](https://github.com/eventb-rossi/Rodin-Bundle/releases/tag/$tag)). Both macOS sha256 values come from the release's SHA256SUMS; brew style and audit passed.")"
-          # Non-fatal: if "Allow auto-merge"/required checks aren't configured the
-          # PR is still opened for manual merge (and the guard above skips re-runs).
-          gh pr merge --auto --squash "$url" \
-            || echo "::warning::Could not enable auto-merge; merge $url manually."
+          .github/scripts/open-bump-pr.sh --auto-merge --closes "$CASK: $old → $new" \
+            "$branch" "$CASK $ver" \
+            "Automated bump of \`$CASK\` from $old to $new (Rodin-Bundle [$tag](https://github.com/eventb-rossi/Rodin-Bundle/releases/tag/$tag)). Both macOS sha256 values come from the release's SHA256SUMS; brew style and audit passed." \
+            "$f"
 
   # Atelier B's upload paths vary by release, so track that cask manually. Any
   # cask the jobs above bump automatically (ProB2-UI, Rodin) also gets a
