@@ -1,7 +1,8 @@
 # Homebrew Tap for Event-B Rossi
 
 Homebrew formulae and casks for the [Event-B](https://www.event-b.org/) / B-method
-ecosystem — the Rodin Platform IDE, the EventBTool code/documentation generator,
+ecosystem — the Rodin Platform IDE (as the eventb-rossi
+[Rodin Bundle](https://github.com/eventb-rossi/Rodin-Bundle)), the EventBTool code/documentation generator,
 ClearSy's Atelier B, and the ProB2-UI animator and model checker.
 
 ## Install
@@ -14,20 +15,24 @@ brew tap eventb-rossi/tap
 
 | Cask        | Architectures                  | Description                       |
 | ----------- | ------------------------------ | --------------------------------- |
-| `rodin`     | Intel + Apple Silicon (native) | Rodin Platform — Event-B IDE      |
-| `rodin@rc`  | Intel + Apple Silicon (native) | Rodin Platform pre-release        |
+| `rodin`     | Intel + Apple Silicon (native) | Rodin Platform — Event-B IDE ([Rodin Bundle](https://github.com/eventb-rossi/Rodin-Bundle)) |
+| `rodin@rc`  | Intel + Apple Silicon (native) | Rodin Bundle release candidate    |
 | `atelier-b` | Intel + Apple Silicon (native) | Atelier B — IDE for the B method  |
 | `prob2-ui`  | Intel + Apple Silicon (native) | ProB2-UI — JavaFX GUI for ProB    |
 
 ```sh
-brew install --cask rodin        # stable — Intel + Apple Silicon
-brew install --cask rodin@rc     # release candidate — Intel + Apple Silicon
+brew install --cask rodin        # latest Rodin Bundle release — Intel + Apple Silicon
+brew install --cask rodin@rc     # newest release or -rcN candidate — Intel + Apple Silicon
 brew install --cask atelier-b    # Atelier B Community Edition
 brew install --cask prob2-ui     # ProB2-UI — ProB animator/model checker GUI
 ```
 
-Both Rodin casks install the same `rodin.app` and therefore conflict — install only
-one at a time.
+Both Rodin casks install the [Rodin Bundle](https://github.com/eventb-rossi/Rodin-Bundle):
+Rodin 3.10 with SMT solvers, ProB, the Proof Obligation Cleaner and the Rossi bridge
+preinstalled, signed and notarized by Apple. `rodin` follows the latest release,
+`rodin@rc` the newest release *or* release candidate, so between candidates it is the
+same build as `rodin`. Both install the same `rodin.app` and therefore conflict —
+install only one at a time.
 
 ### Formulae (command-line tools)
 
@@ -58,11 +63,15 @@ brew install rossi
 ## Requirements
 
 - macOS 11 (Big Sur) or newer.
-- **Rodin** needs a system **Java 17 or newer** — it bundles no JRE:
+- **Rodin** needs a system **Java 21 or newer** — it bundles no JRE:
 
   ```sh
   brew install --cask temurin
   ```
+
+  On Apple Silicon, Rodin itself, Z3, veriT and ProB run natively; the bundled CVC3 and
+  CVC4 SMT solvers are Intel binaries and need Rosetta 2
+  (`softwareupdate --install-rosetta`).
 
   The `eventb-checker`, `eventb-animate`, `evbt`, `tlc4b` and `b2program` formulae do not
   need a separate JDK; Homebrew installs `openjdk` for them automatically. Only `tlc4b`
@@ -91,12 +100,11 @@ brew install rossi
   symbolic backend also supports deadlock and invariant checking; Sylvan's
   parallel symbolic backends are omitted.
 
-- Rodin, Atelier B and the **Intel** ProB2-UI build are **not notarized** by Apple (the
-  Apple Silicon ProB2-UI build is notarized). If Gatekeeper blocks an app from opening,
-  clear the quarantine flag, e.g.:
+- Rodin is signed and notarized. Atelier B and the **Intel** ProB2-UI build are **not
+  notarized** by Apple (the Apple Silicon ProB2-UI build is notarized). If Gatekeeper
+  blocks one of those from opening, clear the quarantine flag, e.g.:
 
   ```sh
-  xattr -dr com.apple.quarantine /Applications/rodin.app
   xattr -dr com.apple.quarantine "/Applications/Atelier B.app"
   xattr -dr com.apple.quarantine /Applications/ProB2-UI.app
   ```

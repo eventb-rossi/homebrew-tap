@@ -1,20 +1,33 @@
 cask "rodin" do
   arch arm: "aarch64", intel: "x86_64"
 
-  version "3.10"
-  sha256 arm:   "8902f55f4171b506eaf74757e73dcb33d4a7b214a14fbdd6971b65a2a3392bca",
-         intel: "82a339f664ab01161d2f389c9983e6a0fc0bdb151312900bec1079e6cf03556e"
+  version "3.10.0-2611,202611160826-a263a14"
+  sha256 arm:   "bb81c992faab2737121d9f23d25734271cbf8e812c1458fba5b62dd755d4ecc4",
+         intel: "e5764714b5b93d8beecc6eddbf8cf391176622087ee4ca535a715bb1ab5ec864"
 
-  # The filename embeds an opaque build id (timestamp + git hash); update it on version bumps.
-  url "https://downloads.sourceforge.net/rodin-b-sharp/Core_Rodin_Platform/#{version}/rodin-#{version}.0.202607010932-881664d81-macosx.cocoa.#{arch}.tar.gz"
+  # The asset name carries the build qualifier (commit date + hash), which the
+  # release tag does not, so the version is "<tag without v>,<qualifier>".
+  url "https://github.com/eventb-rossi/Rodin-Bundle/releases/download/v#{version.csv.first}/rodin-#{version.csv.first.split("-").first}.#{version.csv.second}-rossi-macosx.cocoa.#{arch}.zip"
   name "Rodin Platform"
+  name "Rodin Bundle"
   desc "IDE for formal modelling and verification with Event-B"
-  homepage "https://wiki.event-b.org/"
+  homepage "https://github.com/eventb-rossi/Rodin-Bundle"
 
+  # GitHub's latest release excludes the -rcN candidates (rodin@rc tracks those).
+  # Read the qualifier from the release's macOS asset names.
   livecheck do
-    url "https://sourceforge.net/projects/rodin-b-sharp/files/Core_Rodin_Platform/"
-    strategy :page_match do |page|
-      page.scan(%r{Core_Rodin_Platform/(\d+(?:\.\d+)+)/}i).flatten
+    url :url
+    regex(/^rodin[._-]v?(\d+(?:\.\d+)+)\.(\d+-\h+)-rossi-macosx\.cocoa\.(?:aarch64|x86_64)\.zip$/i)
+    strategy :github_latest do |json, regex|
+      tag = json["tag_name"]&.delete_prefix("v")
+      next if tag.blank?
+
+      json["assets"]&.map do |asset|
+        match = asset["name"]&.match(regex)
+        next if match.nil?
+
+        "#{tag},#{match[2]}"
+      end
     end
   end
 
@@ -23,38 +36,36 @@ cask "rodin" do
   app "rodin.app"
 
   postflight_steps do
-    inreplace "rodin.app/Contents/Eclipse/rodin.ini",
-              /\A(?!.*org\.eclipse\.e4\.ui\.css\.swt\.theme).*\z/m,
-              "\\0-Dorg.eclipse.e4.ui.css.swt.theme=org.eclipse.e4.ui.css.theme.e4_default\n",
-              base:         :appdir,
-              audit_result: false
-
-    # The e4 CSS theme above only pins the Eclipse-drawn widgets. On a dark-mode
-    # Mac, SWT also picks its dark theme and flips the native Cocoa controls dark
-    # (a broken mixed UI). SWT's Display.isSystemDarkTheme() reads the
-    # "AppleInterfaceStyle" user default via NSUserDefaults.standardUserDefaults,
-    # whose per-app domain shadows the global one. Pinning it to "Light" in
-    # Rodin's own domain makes SWT choose the light theme and turn the native
-    # appearance light too. This is the macOS analog of forcing
-    # GTK_THEME=Adwaita:light on Linux, scoped to Rodin's bundle id only.
-    # (NSRequiresAquaSystemAppearance is ignored on modern macOS, so it cannot be
-    # used for this.)
+    # Rodin's editor and prover colours assume a light background. The bundle
+    # already pins the Eclipse CSS theme in its product branding, and the app is
+    # signed and notarized, so nothing inside rodin.app may be edited here (that
+    # would break its code seal). On a dark-mode Mac, though, SWT still picks
+    # its dark theme and flips the native Cocoa controls dark (a broken mixed
+    # UI). SWT's Display.isSystemDarkTheme() reads the "AppleInterfaceStyle"
+    # user default via NSUserDefaults.standardUserDefaults, whose per-app domain
+    # shadows the global one. Pinning it to "Light" in Rodin's own domain makes
+    # SWT choose the light theme and turn the native appearance light too. This
+    # is the macOS analog of forcing GTK_THEME=Adwaita:light on Linux, scoped to
+    # Rodin's bundle id only. (NSRequiresAquaSystemAppearance, which the bundle
+    # sets, is ignored on modern macOS.)
     run "/usr/bin/defaults",
-        args: ["write", "org.rodinp.platform.product",
+        args: ["write", "org.eventb.rossi.rodin",
                "AppleInterfaceStyle", "-string", "Light"]
   end
 
   zap trash: [
     "~/Library/Application Support/rodin",
+    "~/Library/Preferences/org.eventb.rossi.rodin.plist",
     "~/Library/Preferences/org.rodinp.platform.plist",
     "~/Library/Preferences/org.rodinp.platform.product.plist",
   ]
 
   caveats <<~EOS
-    Rodin requires a system Java 17+ (it bundles none); install one with e.g.:
+    Rodin requires a system Java 21+ (it bundles none); install one with e.g.:
       brew install --cask temurin
 
-    Rodin is not notarized by Apple. If macOS Gatekeeper blocks it from opening, run:
-      xattr -dr com.apple.quarantine "#{appdir}/rodin.app"
+    On Apple Silicon the bundled CVC3 and CVC4 SMT solvers are Intel binaries
+    and need Rosetta 2 (Z3, veriT and ProB run natively):
+      softwareupdate --install-rosetta
   EOS
 end
