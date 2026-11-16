@@ -234,20 +234,7 @@ jobs:
           intel_sha="$(shasum -a 256 "$RUNNER_TEMP/ProB2-UI-x86_64-${new}.dmg" | cut -d' ' -f1)"
 
           f=Casks/prob2-ui.rb
-          ruby - "$f" "$old" "$new" "$arm_sha" "$intel_sha" <<'RUBY'
-          path, old, latest, arm, intel = ARGV
-          contents = File.read(path)
-          {
-            /^  version "#{Regexp.escape(old)}"$/ => "  version \"#{latest}\"",
-            /^  sha256 arm:\s+"[0-9a-f]{64}",$/ => "  sha256 arm:   \"#{arm}\",",
-            /^         intel:\s+"[0-9a-f]{64}"$/ => "         intel: \"#{intel}\"",
-          }.each do |pattern, replacement|
-            raise "Expected exactly one #{pattern} in #{path}" unless contents.scan(pattern).length == 1
-
-            contents.sub!(pattern, replacement)
-          end
-          File.write(path, contents)
-          RUBY
+          ruby .github/scripts/set-cask-version.rb "$f" "$old" "$new" "$arm_sha" "$intel_sha"
 
           git diff --check
           brew style "$f"
@@ -272,11 +259,97 @@ jobs:
           fi
           gh pr create --base main --head "$branch" --title "prob2-ui $new" --body "$body"
 
-  # Rodin's URLs have opaque build ids and Atelier B's upload paths vary by
-  # release. Track those casks manually. ProB2-UI also gets a tracking issue if
-  # its automatic bump cannot open a PR (for example, a DMG is missing).
+  # Rodin comes from eventb-rossi/Rodin-Bundle: `rodin` from the latest release,
+  # `rodin@rc` from the newest release or -rcN candidate. The cask version is
+  # "<tag without v>,<build qualifier>" because the asset names carry a
+  # qualifier (commit date + hash) the tag does not; livecheck reads it from the
+  # release's assets. Like ProB2-UI, the root-level arm/intel sha256 map is out
+  # of bump-cask-pr's reach, so bump both casks here. The sums come from the
+  # release's SHA256SUMS, which Rodin-Bundle computes from the assets it serves,
+  # so the two ~220 MB zips need not be downloaded.
+  bump-rodin:
+    strategy:
+      fail-fast: false     # a broken candidate must not block the stable bump
+      matrix:
+        cask: [rodin, rodin@rc]
+    runs-on: macos-latest   # Linux Homebrew cannot livecheck casks
+    env:
+      HOMEBREW_GIT_NAME: github-actions[bot]
+      HOMEBREW_GIT_EMAIL: 41898282+github-actions[bot]@users.noreply.github.com
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          token: ${{ secrets.VERSION_BUMP_TOKEN }}
+      - uses: Homebrew/actions/setup-homebrew@2026.10.26.1
+        with:
+          token: ${{ secrets.VERSION_BUMP_TOKEN }}
+      - uses: ./.github/actions/setup-tap
+
+      - name: Bump ${{ matrix.cask }} if a newer Rodin-Bundle release exists
+        env:
+          GH_TOKEN: ${{ secrets.VERSION_BUMP_TOKEN }}
+          CASK: ${{ matrix.cask }}
+        run: |
+          set -euo pipefail
+
+          json="$(brew livecheck "eventb-rossi/tap/$CASK" --cask --newer-only --json)"
+          [ "$(jq 'length' <<<"$json")" -eq 0 ] && { echo "$CASK is up to date"; exit 0; }
+          old="$(jq -r '.[0].version.current' <<<"$json")"
+          new="$(jq -r '.[0].version.latest' <<<"$json")"
+          # <tag without v>,<qualifier>; refuse anything else rather than
+          # write a version the url template cannot resolve.
+          [[ "$new" =~ ^[0-9]+(\.[0-9]+)+-[0-9]{4}(\.[0-9]+)?(-rc[0-9]+)?,[0-9]+-[0-9a-f]+$ ]]
+          tag="v${new%%,*}"
+          branch="bump-$CASK-${new%%,*}"
+          echo "Bumping $CASK $old -> $new ($tag)"
+
+          # Idempotent: skip if a PR for this version was already opened.
+          if [ "$(gh pr list --head "$branch" --state all --json number --jq 'length')" -ne 0 ]; then
+            echo "PR for $branch already exists"; exit 0
+          fi
+
+          # Look the sums up by the exact asset names the cask's url template
+          # produces, so a qualifier livecheck misread fails here (an empty sum
+          # is rejected by set-cask-version.rb) instead of shipping a dead url.
+          sums="$(curl -fsSL --retry 3 \
+            "https://github.com/eventb-rossi/Rodin-Bundle/releases/download/$tag/SHA256SUMS")"
+          base="${new%%-*}"
+          qualifier="${new#*,}"
+          sum_of() {
+            awk -v n="rodin-$base.$qualifier-rossi-macosx.cocoa.$1.zip" \
+              '$2 == n { print $1 }' <<<"$sums"
+          }
+          arm_sha="$(sum_of aarch64)"
+          intel_sha="$(sum_of x86_64)"
+
+          f="Casks/$CASK.rb"
+          ruby .github/scripts/set-cask-version.rb "$f" "$old" "$new" "$arm_sha" "$intel_sha"
+
+          git diff --check
+          brew style "$f"
+          brew audit --cask "eventb-rossi/tap/$CASK"
+
+          git config user.name  "$HOMEBREW_GIT_NAME"
+          git config user.email "$HOMEBREW_GIT_EMAIL"
+          git switch -c "$branch"
+          git add "$f"
+          git commit -m "$CASK ${new%%,*}"
+          # No PR references this branch (guarded above). Replace an orphan
+          # branch left by a run that pushed but failed before opening its PR.
+          git push -u --force origin "$branch"
+          url="$(gh pr create --base main --head "$branch" --title "$CASK ${new%%,*}" \
+            --body "Automated bump of \`$CASK\` from $old to $new (Rodin-Bundle [$tag](https://github.com/eventb-rossi/Rodin-Bundle/releases/tag/$tag)). Both macOS sha256 values come from the release's SHA256SUMS; brew style and audit passed.")"
+          # Non-fatal: if "Allow auto-merge"/required checks aren't configured the
+          # PR is still opened for manual merge (and the guard above skips re-runs).
+          gh pr merge --auto --squash "$url" \
+            || echo "::warning::Could not enable auto-merge; merge $url manually."
+
+  # Atelier B's upload paths vary by release, so track that cask manually. Any
+  # cask the jobs above bump automatically (ProB2-UI, Rodin) also gets a
+  # tracking issue if its bump could not open a PR (for example, a missing
+  # artifact).
   track-casks:
-    needs: bump-prob2-ui
+    needs: [bump-prob2-ui, bump-rodin]
     if: ${{ always() }}
     runs-on: macos-latest        # Linux Homebrew cannot livecheck casks
     steps:
@@ -312,8 +385,10 @@ jobs:
           while IFS=$'\t' read -r name current latest; do
             title="${name}: ${current} → ${latest}"
 
-            if [ "$name" = "prob2-ui" ] &&
-               [ "$(gh pr list --head "bump-prob2-ui-$latest" --state open --json number --jq 'length')" -ne 0 ]; then
+            # A cask the bump jobs above handle has an open PR on
+            # bump-<name>-<version>, where a "<tag>,<qualifier>" version
+            # (Rodin) is named by its tag part only.
+            if [ "$(gh pr list --head "bump-${name}-${latest%%,*}" --state open --json number --jq 'length')" -ne 0 ]; then
               echo "Already has an open bump PR: $name $latest"
               continue
             fi
